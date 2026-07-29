@@ -1,0 +1,17 @@
+{
+  "name": "search-and-ranking",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Learn search & ranking in TypeScript — inverted index, TF-IDF, BM25, retrieve-then-rank, sharding, and typeahead.",
+  "scripts": {
+    "phase1": "node src/phase1/inverted-index.ts",
+    "phase2": "node src/phase2/tfidf.ts",
+    "phase3": "node src/phase3/bm25.ts",
+    "phase4": "node src/phase4/retrieve-then-rank.ts",
+    "phase5": "node src/phase5/scatter-gather.ts",
+    "phase6": "node src/phase6/typeahead.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": { "typescript": "^5.7.0", "@types/node": "^22.10.0" }
+}

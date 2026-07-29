@@ -1,0 +1,69 @@
+# Learn Search & Ranking in TypeScript
+
+A hands-on, runnable project for understanding search engines at a Staff/EM
+level — from the inverted index and BM25 to sharded scatter-gather and typeahead.
+
+Every phase is a small script you can run and read. No build step: modern Node
+runs the TypeScript directly. No external services.
+
+> Built to match a Staff-level study path. The through-line: search **inverts the
+> work** — do the expensive part at INDEX time so query time is cheap. Every
+> search question is four decisions: **analysis** (tokens/stemming),
+> **retrieve-then-rank**, **freshness**, and **topology** (shard, scatter-gather).
+
+## Setup
+
+```bash
+npm install   # dev types only
+```
+
+## The lessons
+
+| Command | What you learn |
+|---|---|
+| `npm run phase1` | **Inverted index** — analysis (tokenize/stopwords/stem) + boolean AND query |
+| `npm run phase2` | **TF-IDF** — ranking matches by term frequency × rarity |
+| `npm run phase3` | **BM25** — TF saturation + length normalization (beats keyword-stuffing) |
+| `npm run phase4` | **Retrieve-then-rank** — the cheap-recall → expensive-precision funnel |
+| `npm run phase5` | **Scatter-gather** — sharding, aggregation, and tail latency |
+| `npm run phase6` | **Typeahead** — top-K per prefix precomputed at build time |
+
+## What each phase proves (the money quotes)
+
+- **Phase 3** — a keyword-stuffed doc (`shoes ×10`) **tops TF-IDF** but BM25
+  drops it off the first page entirely; the genuinely relevant short docs win.
+- **Phase 4** — BM25 retrieval order `[1,2,3,6,7]` becomes `[6,2,1,3,7]` after
+  re-ranking with popularity/recency — and the rich model only touched 5 docs.
+- **Phase 5** — a 5-shard query bound by one slow shard takes **301ms**;
+  hedging it to a replica cuts it to **84ms**. And the tail math: with 100 shards
+  each slow 1% of the time, **63%** of queries hit a slow shard.
+- **Phase 6** — suggestions narrow as you type, each an O(1) point lookup on a
+  precomputed prefix table — no ranking at query time.
+
+## The mental model
+
+```
+        INDEX TIME (expensive, offline)          QUERY TIME (cheap, online)
+  ┌─────────────────────────────────────┐   ┌──────────────────────────────────┐
+  │ analyze → inverted index             │   │ analyze query → retrieve (BM25)  │
+  │ precompute typeahead prefixes        │   │  → re-rank shortlist → results   │
+  │ build & shard segments               │   │ scatter to shards → gather top-k │
+  └─────────────────────────────────────┘   └──────────────────────────────────┘
+```
+
+## Project layout
+
+```
+src/
+  lib/log.ts  ·  lib/corpus.ts   (shared analyzer + sample docs)
+  phase1/  inverted index + boolean query
+  phase2/  TF-IDF ranking
+  phase3/  BM25
+  phase4/  retrieve-then-rank funnel
+  phase5/  sharding + scatter-gather + tail latency
+  phase6/  typeahead (top-K per prefix)
+```
+
+## License
+
+MIT — use it, fork it, learn from it.
