@@ -1,0 +1,8 @@
+# Cloudflare Pages headers (https://developers.cloudflare.com/pages/configuration/headers/)
+# Fonts are content-hashed and never change — cache them hard.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+# Always revalidate the HTML so edits show up immediately.
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff

@@ -75,6 +75,33 @@ browser — every panel is one of the phases above, made interactive:
 
 The tab bar groups panels into the **Foundations → Ranking → Relevance → Systems** tiers above. Tabs are keyboard-navigable (arrow keys) and deep-linkable (`#3-bm25`, `#11-learning-to-rank`) so you can share a link straight to one concept.
 
+The page is fully static and self-contained — one HTML file plus self-hosted fonts
+in `web/fonts/` (Space Grotesk · IBM Plex Sans · IBM Plex Mono). No CDN, no runtime
+dependencies, no build step.
+
+## Deploy to Cloudflare Pages
+
+The demo is a static site, so **Cloudflare Pages** hosts it directly.
+
+**Option A — connect the repo (auto-deploys on every push):**
+In the Cloudflare dashboard → *Workers & Pages* → *Create* → *Pages* → *Connect to Git*,
+pick this repo and set:
+
+- **Build command:** *(leave empty)*
+- **Build output directory:** `web`
+
+Every `git push` then publishes automatically.
+
+**Option B — deploy from your machine:**
+
+```bash
+npx wrangler login          # first time only — opens the browser
+npm run deploy              # wrangler pages deploy web
+```
+
+Both paths serve `web/` as-is. `web/_headers` caches the fonts for a year and keeps
+the HTML always-fresh; `wrangler.toml` records the project name and output dir.
+
 ```bash
 npm run web        # serves it at http://localhost:8080 (no deps)
 # — or just open web/index.html directly in a browser; it's fully standalone.

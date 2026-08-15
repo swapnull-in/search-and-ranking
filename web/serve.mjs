@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".mjs": "text/javascript" };
 
 const server = createServer(async (req, res) => {
   // Strip query string, block path traversal, default to index.html.

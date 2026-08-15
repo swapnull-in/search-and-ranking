@@ -1,0 +1,5 @@
+# Cloudflare Pages config. The site is pure static files in web/ (no build step).
+# Deploy from the CLI:   npm run deploy   (runs `wrangler pages deploy web`)
+# First time only:       npx wrangler login
+name = "search-and-ranking"
+pages_build_output_dir = "web"

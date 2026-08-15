@@ -18,6 +18,7 @@
     "phase11": "node src/phase11/learning-to-rank.ts",
     "phase12": "node src/phase12/evaluation-metrics.ts",
     "web": "node web/serve.mjs",
+    "deploy": "npx wrangler pages deploy web --project-name search-and-ranking",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": { "typescript": "^5.7.0", "@types/node": "^22.10.0" }
