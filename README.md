@@ -1,10 +1,12 @@
 # Learn Search & Ranking in TypeScript
 
-A hands-on, runnable project for understanding search engines at a Staff/EM
-level — from the inverted index and BM25 to sharded scatter-gather and typeahead.
+A hands-on, runnable path from **beginner to staff engineer** — the inverted index,
+TF-IDF and BM25, retrieve-then-rank, phrases, fuzzy matching, vector/semantic search,
+hybrid fusion, learning-to-rank, evaluation metrics, sharded scatter-gather, and typeahead.
 
-Every phase is a small script you can run and read. No build step: modern Node
-runs the TypeScript directly. No external services.
+Every phase is a small script you can run and read — **and** an interactive panel in the
+web app (`npm run web`). No build step: modern Node runs the TypeScript directly. No
+external services.
 
 > Built to match a Staff-level study path. The through-line: search **inverts the
 > work** — do the expensive part at INDEX time so query time is cheap. Every
@@ -58,7 +60,9 @@ Work top to bottom; each tier assumes the one above.
 
 Prefer poking things over reading logs? `web/index.html` is a single, self-contained
 page that ports the **same** analyzer, BM25, re-ranker, and prefix table into the
-browser — every panel is one of the phases above, made interactive:
+browser. It opens on an **Overview** page (the index-time → query-time through-line),
+with a left **sidebar** that groups every lesson by tier — each panel is one of the
+phases above, made interactive:
 
 - **Analyzer** — type text, watch tokens get lowercased, stopword-dropped, stemmed
 - **Inverted index** — live boolean AND with posting lists and highlighted terms; flip **"break it"** to analyze the query differently from the index and watch matches collapse to zero — the #1 real-world search bug, live
@@ -73,7 +77,10 @@ browser — every panel is one of the phases above, made interactive:
 - **Scatter-gather** — animate a 5-shard query, then hedge the slow shard away; plus the p99 tail-latency math
 - **Typeahead** — real precomputed prefix table, suggestions narrow as you type
 
-The tab bar groups panels into the **Foundations → Ranking → Relevance → Systems** tiers above. Tabs are keyboard-navigable (arrow keys) and deep-linkable (`#3-bm25`, `#11-learning-to-rank`) so you can share a link straight to one concept.
+The sidebar groups the lessons into the **Foundations → Ranking → Relevance → Systems**
+tiers above. Navigation is keyboard-friendly (↑/↓ arrows) and deep-linkable
+(`#3-bm25`, `#11-learning-to-rank`) so you can share a link straight to one concept,
+and it collapses to a drawer on narrow screens.
 
 The page is fully static and self-contained — one HTML file plus self-hosted fonts
 in `web/fonts/` (Space Grotesk · IBM Plex Sans · IBM Plex Mono). No CDN, no runtime
