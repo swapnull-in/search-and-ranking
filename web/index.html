@@ -130,6 +130,26 @@
   code { font-family: var(--mono); background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
   .footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; text-align: center; }
   @media (max-width: 560px) { .metric { font-size: 21px; } }
+  nav.tabs button:focus-visible, input:focus-visible, .srow:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  tr.srow.clk { cursor: pointer; }
+  tr.srow.clk:hover td { background: var(--accent-soft); }
+  .caret { display: inline-block; color: var(--muted); transition: .12s; font-size: 11px; }
+  .brk { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 2px 0 8px; }
+  .brk code { background: var(--accent-soft); }
+  .brk b { color: var(--ink); }
+  .brk .dim2 { opacity: .65; }
+  .brk-sum { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); color: var(--ink); }
+  .toggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+  .toggle input { accent-color: var(--bad); width: 15px; height: 15px; }
+  .warn-box { border-left: 3px solid var(--bad); background: linear-gradient(90deg, rgba(214,69,69,.10), transparent);
+    padding: 8px 0 8px 12px; margin: 12px 0 0; border-radius: 0 6px 6px 0; font-size: 13px; }
+  .two-terms { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; margin-top: 10px; }
+  .two-terms .side { color: var(--muted); }
+  .two-terms .side b { color: var(--ink); font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
@@ -179,7 +199,10 @@
     <div class="card">
       <label class="fld" for="q1">Query (AND of all terms)</label>
       <input type="text" id="q1" value="red running shoes" />
-      <div class="chips" id="q1terms" style="margin-top:10px"></div>
+      <label class="toggle"><input type="checkbox" id="q1break" />
+        Break it: analyze the <em>query</em> differently from the index (skip stopwords &amp; stemming)</label>
+      <div class="two-terms" id="q1sides"></div>
+      <div id="q1warn"></div>
       <div style="margin-top:16px" class="postings" id="q1postings"></div>
       <h3 style="margin-top:18px">Intersection → matching docs</h3>
       <div id="q1result"></div>
@@ -197,7 +220,7 @@
       <label class="fld" for="q2">Query</label>
       <input type="text" id="q2" value="red running shoes" />
       <div class="chips" id="q2terms" style="margin-top:10px"></div>
-      <h3 style="margin-top:16px">Ranked results</h3>
+      <h3 style="margin-top:16px">Ranked results <span style="text-transform:none;letter-spacing:0;font-weight:400">· click a row for the per-term math</span></h3>
       <div id="q2result"></div>
       <div class="note">TF-IDF has two flaws BM25 fixes next: TF grows without limit (keyword-stuffable),
         and it doesn't normalize for length so long docs win unfairly.</div>
@@ -233,6 +256,7 @@
           <div id="q3bm25"></div>
         </div>
       </div>
+      <p style="font-size:12px;color:var(--muted);margin:12px 0 0">Click any row to expand the per-term <code>idf × norm</code> breakdown.</p>
       <div class="note" id="q3note"></div>
     </div>
   </section>
@@ -339,18 +363,58 @@ const docById = id => CORPUS.find(d => d.id === id) || DOCS.find(d => d.id === i
    ───────────────────────────────────────────────────────────────────────── */
 const sections = [...document.querySelectorAll('section.phase')];
 const tabsEl = document.getElementById('tabs');
+const slug = s => s.dataset.tab.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+tabsEl.setAttribute('role', 'tablist');
 sections.forEach((sec, i) => {
+  const id = slug(sec);
+  sec.id = 'panel-' + id; sec.setAttribute('role', 'tabpanel'); sec.setAttribute('aria-labelledby', 'tab-' + id);
   const b = document.createElement('button');
-  b.textContent = sec.dataset.tab;
-  b.onclick = () => activate(i);
+  b.textContent = sec.dataset.tab; b.id = 'tab-' + id;
+  b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', sec.id);
+  b.onclick = () => activate(i, true);
+  b.onkeydown = (e) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : e.key === 'Home' ? 'first' : e.key === 'End' ? 'last' : 0;
+    if (!d) return; e.preventDefault();
+    const n = d === 'first' ? 0 : d === 'last' ? sections.length - 1 : (i + d + sections.length) % sections.length;
+    activate(n, true); tabsEl.children[n].focus();
+  };
   tabsEl.appendChild(b);
 });
-function activate(i) {
+function activate(i, push) {
   sections.forEach((s, j) => s.classList.toggle('active', i === j));
-  [...tabsEl.children].forEach((b, j) => b.classList.toggle('active', i === j));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  [...tabsEl.children].forEach((b, j) => {
+    const on = i === j;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+  });
+  if (push && location.hash.slice(1) !== slug(sections[i]))
+    history.replaceState(null, '', '#' + slug(sections[i]));
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
 }
-activate(0);
+function fromHash() {
+  const i = sections.findIndex(s => slug(s) === location.hash.slice(1));
+  activate(i >= 0 ? i : 0, false);
+}
+addEventListener('hashchange', fromHash);
+fromHash();
+
+/* Expandable score-breakdown rows (delegated; tables re-render on every input). */
+function toggleRow(row) {
+  const detail = row.nextElementSibling;
+  if (!detail || !detail.classList.contains('drow')) return;
+  const open = detail.hasAttribute('hidden');
+  detail.toggleAttribute('hidden', !open);
+  row.setAttribute('aria-expanded', String(open));
+  const caret = row.querySelector('.caret'); if (caret) caret.textContent = open ? '▾' : '▸';
+}
+document.addEventListener('click', e => { const r = e.target.closest('tr.srow.clk'); if (r) toggleRow(r); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const r = e.target.closest && e.target.closest('tr.srow.clk');
+  if (r) { e.preventDefault(); toggleRow(r); }
+});
 
 /* ─────────────────────────────────────────────────────────────────────────
    Analyzer panel
@@ -378,14 +442,20 @@ const INDEX = new Map();
 for (const doc of CORPUS) for (const term of new Set(analyze(doc.text))) {
   (INDEX.get(term) || INDEX.set(term, []).get(term)).push(doc.id);
 }
-const q1 = document.getElementById('q1');
+const q1 = document.getElementById('q1'), q1break = document.getElementById('q1break');
+/** The "wrong" analyzer: lowercase + split only — no stopwords, no stemming. */
+const naiveAnalyze = text => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 function renderP1() {
-  const terms = analyze(q1.value);
-  document.getElementById('q1terms').innerHTML = terms.map(t => `<span class="chip">${t}</span>`).join('');
+  const broken = q1break.checked;
+  const idxTerms = analyze(q1.value);                       // what the INDEX is built with
+  const terms = broken ? naiveAnalyze(q1.value) : idxTerms;  // what the QUERY is analyzed with
+  document.getElementById('q1sides').innerHTML =
+    `<div class="side">index analyzer → <b>[${idxTerms.join(', ')}]</b></div>` +
+    `<div class="side">query analyzer → <b>[${terms.join(', ')}]</b>${broken ? ' <span style="color:var(--bad)">✗ different</span>' : ' <span style="color:var(--good)">✓ same</span>'}</div>`;
   const post = document.getElementById('q1postings');
   post.innerHTML = terms.map(t => {
     const list = INDEX.get(t) || [];
-    return `<div><span class="term">"${t}"</span>→ [${list.join(', ') || '∅'}]</div>`;
+    return `<div><span class="term">"${t}"</span>→ [${list.join(', ') || '∅ — not a term in the index'}]</div>`;
   }).join('') || '<span class="ta-empty">enter a query</span>';
   const lists = terms.map(t => new Set(INDEX.get(t) || []));
   let result = [];
@@ -394,7 +464,13 @@ function renderP1() {
   out.innerHTML = result.length
     ? `<table><tbody>${result.map(id => `<tr><td class="num">doc ${id}</td><td class="doc-text">${hlDoc(docById(id).text, terms)}</td></tr>`).join('')}</tbody></table>`
     : '<div class="ta-empty">no docs contain all terms</div>';
+  document.getElementById('q1warn').innerHTML = broken
+    ? `<div class="warn-box">The query stemmed <code>shoes</code>/<code>running</code> to themselves, but the index stored
+       <code>shoe</code>/<code>run</code> — so their posting lists come back empty and the AND collapses.
+       <strong>Same text, different analyzer → nothing matches.</strong> That's the #1 real-world search bug, live.</div>`
+    : '';
 }
+q1break.addEventListener('change', renderP1);
 function hlDoc(text, terms) {
   return text.split(/(\s+)/).map(w => {
     const bare = w.replace(/[^a-z0-9]/gi, '');
@@ -414,10 +490,13 @@ function buildTfIdf(docs) {
   }
   const idf = term => { const df = postings.get(term)?.size || 0; return df===0?0:Math.log(N/df); };
   return { search(query) {
-    const scores = new Map();
+    const scores = new Map(), detail = new Map();
     for (const term of analyze(query)) { const w = idf(term);
-      for (const [id, tf] of postings.get(term) || []) scores.set(id, (scores.get(id)||0)+tf*w); }
-    return [...scores.entries()].sort((a,b)=>b[1]-a[1]);
+      for (const [id, tf] of postings.get(term) || []) {
+        scores.set(id, (scores.get(id)||0)+tf*w);
+        (detail.get(id) || detail.set(id, []).get(id)).push({ term, tf, idf: w, contrib: tf*w });
+      } }
+    return { ranked: [...scores.entries()].sort((a,b)=>b[1]-a[1]), detail };
   }};
 }
 const TFIDF = buildTfIdf(CORPUS);
@@ -425,17 +504,42 @@ const q2 = document.getElementById('q2');
 function renderP2() {
   const terms = analyze(q2.value);
   document.getElementById('q2terms').innerHTML = terms.map(t=>`<span class="chip">${t}</span>`).join('');
-  const res = TFIDF.search(q2.value);
-  document.getElementById('q2result').innerHTML = res.length ? scoreTable(res, terms) : '<div class="ta-empty">no matches</div>';
+  const { ranked, detail } = TFIDF.search(q2.value);
+  document.getElementById('q2result').innerHTML = ranked.length
+    ? scoreTable(ranked, terms, { detailFn: id => tfidfDetail(detail.get(id)) })
+    : '<div class="ta-empty">no matches</div>';
 }
-function scoreTable(res, terms, tagFn) {
+/** Per-term score breakdown, rendered inside an expandable row. */
+function tfidfDetail(rows) {
+  if (!rows) return '';
+  const sum = rows.reduce((a, r) => a + r.contrib, 0);
+  return `<div class="brk">${rows.map(r =>
+    `<div><code>${r.term}</code> · idf ${r.idf.toFixed(3)} × tf ${r.tf} = <b>${r.contrib.toFixed(3)}</b></div>`).join('')}
+    <div class="brk-sum">score = Σ = ${sum.toFixed(3)}</div></div>`;
+}
+function bm25Detail(rows) {
+  if (!rows) return '';
+  const sum = rows.reduce((a, r) => a + r.contrib, 0);
+  return `<div class="brk">${rows.map(r =>
+    `<div><code>${r.term}</code> · idf ${r.idf.toFixed(3)} × norm ${r.norm.toFixed(3)} = <b>${r.contrib.toFixed(3)}</b> <span class="dim2">(tf ${r.tf}, len ${r.len})</span></div>`).join('')}
+    <div class="brk-sum">score = Σ = ${sum.toFixed(3)}</div></div>`;
+}
+function scoreTable(res, terms, opts = {}) {
+  const { tagFn, detailFn } = opts;
   const max = res[0]?.[1] || 1;
   return `<table><thead><tr><th>#</th><th>score</th><th>doc</th></tr></thead><tbody>${
-    res.map(([id, s], i) => `<tr>
-      <td class="rank">${i+1}</td>
-      <td class="num">${s.toFixed(3)}<div class="bar" style="width:${Math.max(3,(s/max)*100)}%"></div></td>
-      <td><span class="num">doc ${id}</span>${tagFn?tagFn(id):''}<div class="doc-text" style="font-size:12.5px">${hlDoc(docById(id).text, terms)}</div></td>
-    </tr>`).join('')}</tbody></table>`;
+    res.map(([id, s], i) => {
+      const clk = detailFn ? ' clk' : '';
+      const attrs = detailFn ? ' tabindex="0" role="button" aria-expanded="false"' : '';
+      const caret = detailFn ? ' <span class="caret">▸</span>' : '';
+      const main = `<tr class="srow${clk}"${attrs}>
+        <td class="rank">${i+1}${caret}</td>
+        <td class="num">${s.toFixed(3)}<div class="bar" style="width:${Math.max(3,(s/max)*100)}%"></div></td>
+        <td><span class="num">doc ${id}</span>${tagFn?tagFn(id):''}<div class="doc-text" style="font-size:12.5px">${hlDoc(docById(id).text, terms)}</div></td>
+      </tr>`;
+      const drow = detailFn ? `<tr class="drow" hidden><td></td><td colspan="2">${detailFn(id)}</td></tr>` : '';
+      return main + drow;
+    }).join('')}</tbody></table>`;
 }
 q2.addEventListener('input', renderP2); renderP2();
 
@@ -453,15 +557,18 @@ function buildRanker(docs) {
   const avg = total/N;
   const idfBM = t => { const df = postings.get(t)?.size||0; return df===0?0:Math.log(1+(N-df+0.5)/(df+0.5)); };
   return {
-    tfidf(query) { const scores = new Map();
+    tfidf(query) { const scores = new Map(), detail = new Map();
       for (const t of analyze(query)) { const idf = Math.log(N/(postings.get(t)?.size||N));
-        for (const [id, tf] of postings.get(t)||[]) scores.set(id,(scores.get(id)||0)+tf*idf); }
-      return top(scores); },
-    bm25(query, k1, b) { const scores = new Map();
+        for (const [id, tf] of postings.get(t)||[]) { scores.set(id,(scores.get(id)||0)+tf*idf);
+          (detail.get(id)||detail.set(id,[]).get(id)).push({ term:t, tf, idf, contrib: tf*idf }); } }
+      return { ranked: top(scores), detail }; },
+    bm25(query, k1, b) { const scores = new Map(), detail = new Map();
       for (const t of analyze(query)) { const idf = idfBM(t);
-        for (const [id, tf] of postings.get(t)||[]) { const norm = tf*(k1+1)/(tf+k1*(1-b+b*(docLen.get(id)/avg)));
-          scores.set(id,(scores.get(id)||0)+idf*norm); } }
-      return top(scores); },
+        for (const [id, tf] of postings.get(t)||[]) { const len = docLen.get(id);
+          const norm = tf*(k1+1)/(tf+k1*(1-b+b*(len/avg))); const contrib = idf*norm;
+          scores.set(id,(scores.get(id)||0)+contrib);
+          (detail.get(id)||detail.set(id,[]).get(id)).push({ term:t, tf, idf, len, norm, contrib }); } }
+      return { ranked: top(scores), detail }; },
   };
   function top(scores){ return [...scores.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5); }
 }
@@ -474,10 +581,10 @@ function renderP3() {
   document.getElementById('bout').textContent = b.toFixed(2);
   const terms = analyze(q3.value);
   const ti = RANKER.tfidf(q3.value), bm = RANKER.bm25(q3.value, k1, b);
-  document.getElementById('q3tfidf').innerHTML = scoreTable(ti, terms, docTag);
-  document.getElementById('q3bm25').innerHTML = scoreTable(bm, terms, docTag);
-  const stuffedTfRank = ti.findIndex(([id])=>id===100);
-  const stuffedBmRank = bm.findIndex(([id])=>id===100);
+  document.getElementById('q3tfidf').innerHTML = scoreTable(ti.ranked, terms, { tagFn: docTag, detailFn: id => tfidfDetail(ti.detail.get(id)) });
+  document.getElementById('q3bm25').innerHTML = scoreTable(bm.ranked, terms, { tagFn: docTag, detailFn: id => bm25Detail(bm.detail.get(id)) });
+  const stuffedTfRank = ti.ranked.findIndex(([id])=>id===100);
+  const stuffedBmRank = bm.ranked.findIndex(([id])=>id===100);
   document.getElementById('q3note').innerHTML =
     `The <span class="tag stuff">stuffed</span> doc ranks <strong>#${stuffedTfRank<0?'off-list':stuffedTfRank+1}</strong> in TF-IDF but ` +
     `<strong>${stuffedBmRank<0?'drops off the page':'#'+(stuffedBmRank+1)}</strong> in BM25. ` +

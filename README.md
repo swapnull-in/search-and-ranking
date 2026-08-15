@@ -35,11 +35,13 @@ page that ports the **same** analyzer, BM25, re-ranker, and prefix table into th
 browser — every panel is one of the phases above, made interactive:
 
 - **Analyzer** — type text, watch tokens get lowercased, stopword-dropped, stemmed
-- **Inverted index** — live boolean AND with the posting lists shown and terms highlighted
-- **TF-IDF / BM25** — side-by-side, with `k1`/`b` sliders; watch the keyword-stuffed doc top TF-IDF but fall off BM25's first page
+- **Inverted index** — live boolean AND with posting lists and highlighted terms; flip **"break it"** to analyze the query differently from the index and watch matches collapse to zero — the #1 real-world search bug, live
+- **TF-IDF / BM25** — side-by-side, with `k1`/`b` sliders; watch the keyword-stuffed doc top TF-IDF but fall off BM25's first page. **Click any result** to expand the per-term `idf × tf` / `idf × norm` math
 - **Retrieve → rank** — drag the popularity/recency/exact-match weights and watch the order change
 - **Scatter-gather** — animate a 5-shard query, then hedge the slow shard away; plus the p99 tail-latency math
 - **Typeahead** — real precomputed prefix table, suggestions narrow as you type
+
+Tabs are keyboard-navigable (arrow keys) and deep-linkable (`#3-bm25`) so you can share a link straight to one concept.
 
 ```bash
 npm run web        # serves it at http://localhost:8080 (no deps)
