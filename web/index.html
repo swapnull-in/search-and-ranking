@@ -92,6 +92,11 @@
   .side-foot { margin-top: auto; padding: 15px 11px 2px; font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--muted); }
   .side-foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
   .side-foot a:hover { color: var(--accent); border-color: var(--accent); }
+  .side-sample { margin-top: 16px; padding: 13px 11px 0; border-top: 1px solid var(--line); }
+  .side-sample label { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .side-sample input { width: 100%; font-family: var(--mono); font-size: 12px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); }
+  .side-sample input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .side-sample p { font-size: 10.5px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
   .main { flex: 1; min-width: 0; padding: 42px clamp(24px, 4vw, 60px) 100px; }
   .main-inner { max-width: 940px; margin: 0 auto; }
   .topbar, .backdrop { display: none; }
@@ -274,6 +279,11 @@
       <span class="wm"><b>Search Systems</b><span>Interactive lab</span></span>
     </div>
     <nav class="nav" id="nav" aria-label="Lessons"></nav>
+    <div class="side-sample">
+      <label for="sampleText">Sample text</label>
+      <input type="text" id="sampleText" value="Red Running Shoes for Men" spellcheck="false" autocomplete="off" />
+      <p>Edit to push it through the analyzer &amp; query panels.</p>
+    </div>
     <div class="side-foot">Runnable ports of the CLI phases.<br /><a href="https://github.com/swapnull-in/search-and-ranking" target="_blank" rel="noopener">View source ↗</a></div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
@@ -1545,6 +1555,20 @@ evalKEl.addEventListener('input', renderEval); renderEval();
   document.getElementById('rxReset').onclick = reset;
   reset();
 })();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Shared "sample text" — one sidebar field feeds the free-text panels.
+   Excludes the fuzzy typo box and the typeahead prefix (different input kinds).
+   ───────────────────────────────────────────────────────────────────────── */
+const SAMPLE_TARGETS = ['anIn', 'q1', 'q2', 'q3', 'q4', 'q7', 'q9', 'q10', 'q14', 'q15'];
+const sampleText = document.getElementById('sampleText');
+sampleText?.addEventListener('input', () => {
+  const v = sampleText.value;
+  for (const id of SAMPLE_TARGETS) {
+    const el = document.getElementById(id);
+    if (el && el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }
+});
 </script>
 </body>
 </html>
