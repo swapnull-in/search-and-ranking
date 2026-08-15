@@ -28,6 +28,24 @@ npm install   # dev types only
 | `npm run phase5` | **Scatter-gather** — sharding, aggregation, and tail latency |
 | `npm run phase6` | **Typeahead** — top-K per prefix precomputed at build time |
 
+## Interactive web demo
+
+Prefer poking things over reading logs? `web/index.html` is a single, self-contained
+page that ports the **same** analyzer, BM25, re-ranker, and prefix table into the
+browser — every panel is one of the phases above, made interactive:
+
+- **Analyzer** — type text, watch tokens get lowercased, stopword-dropped, stemmed
+- **Inverted index** — live boolean AND with the posting lists shown and terms highlighted
+- **TF-IDF / BM25** — side-by-side, with `k1`/`b` sliders; watch the keyword-stuffed doc top TF-IDF but fall off BM25's first page
+- **Retrieve → rank** — drag the popularity/recency/exact-match weights and watch the order change
+- **Scatter-gather** — animate a 5-shard query, then hedge the slow shard away; plus the p99 tail-latency math
+- **Typeahead** — real precomputed prefix table, suggestions narrow as you type
+
+```bash
+npm run web        # serves it at http://localhost:8080 (no deps)
+# — or just open web/index.html directly in a browser; it's fully standalone.
+```
+
 ## What each phase proves (the money quotes)
 
 - **Phase 3** — a keyword-stuffed doc (`shoes ×10`) **tops TF-IDF** but BM25

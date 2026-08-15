@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Search &amp; Ranking — Interactive</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #14171c;
+    --muted: #626b78;
+    --line: #e3e6eb;
+    --accent: #3257ff;
+    --accent-soft: #e8ecff;
+    --good: #0f9d58;
+    --warn: #d9822b;
+    --bad: #d64545;
+    --code-bg: #0f1420;
+    --code-ink: #d5dae6;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1017; --panel: #161a23; --ink: #e7ebf2; --muted: #97a1b2;
+      --line: #262c38; --accent: #6d8bff; --accent-soft: #1c2438;
+      --good: #4ade80; --warn: #f0a04b; --bad: #f27272;
+      --code-bg: #0a0d14; --code-ink: #cfd6e4;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--sans);
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 20px 80px; }
+  header.top h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header.top p { color: var(--muted); margin: 0; max-width: 70ch; }
+  .mental {
+    margin: 18px 0 26px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 16px; font-family: var(--mono);
+    font-size: 12.5px; color: var(--muted); overflow-x: auto; white-space: pre;
+  }
+  nav.tabs {
+    position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px;
+    background: var(--bg); padding: 10px 0; margin-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button {
+    font-family: var(--sans); font-size: 13px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--muted); padding: 7px 12px; border-radius: 999px;
+    cursor: pointer; transition: .12s; white-space: nowrap;
+  }
+  nav.tabs button:hover { color: var(--ink); border-color: var(--accent); }
+  nav.tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  section.phase { display: none; padding-top: 18px; }
+  section.phase.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+  .phase h2 { font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .phase .lede { color: var(--muted); margin: 0 0 18px; max-width: 74ch; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  label.fld { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input[type=text] {
+    width: 100%; font-family: var(--mono); font-size: 15px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink);
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    font-family: var(--mono); font-size: 12.5px; padding: 3px 9px; border-radius: 6px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid transparent;
+  }
+  .chip.dim { background: transparent; color: var(--muted); border-color: var(--line); text-decoration: line-through; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 300px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+  .rank { font-family: var(--mono); color: var(--muted); }
+  .doc-text { color: var(--ink); }
+  .tag { font-size: 10.5px; font-family: var(--mono); padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
+  .tag.stuff { background: rgba(214,69,69,.16); color: var(--bad); }
+  .tag.pad { background: rgba(217,130,43,.16); color: var(--warn); }
+  .bar { height: 6px; border-radius: 3px; background: var(--accent); margin-top: 4px; }
+  .postings { font-family: var(--mono); font-size: 13px; line-height: 1.9; }
+  .postings .term { display: inline-block; min-width: 92px; color: var(--accent); }
+  .hl { background: rgba(50,87,255,.16); border-radius: 3px; padding: 0 2px; }
+  .note {
+    font-size: 13px; color: var(--muted); border-left: 3px solid var(--accent);
+    padding: 6px 0 6px 12px; margin: 14px 0 0; background: linear-gradient(90deg, var(--accent-soft), transparent);
+    border-radius: 0 6px 6px 0;
+  }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .slider-row label { font-family: var(--mono); font-size: 13px; min-width: 130px; color: var(--muted); }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .slider-row output { font-family: var(--mono); font-size: 13px; min-width: 42px; text-align: right; }
+  button.act {
+    font-family: var(--sans); font-size: 13px; background: var(--accent); color: #fff;
+    border: none; padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;
+  }
+  button.act:disabled { opacity: .5; cursor: default; }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .shards { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 16px; }
+  .shard {
+    flex: 1 1 90px; border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    text-align: center; background: var(--bg); transition: .15s;
+  }
+  .shard .sid { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .shard .lat { font-family: var(--mono); font-size: 18px; margin-top: 6px; }
+  .shard.waiting { border-color: var(--warn); }
+  .shard.done { border-color: var(--good); }
+  .shard.slow { border-color: var(--bad); background: rgba(214,69,69,.06); }
+  .shard.hedged { border-style: dashed; border-color: var(--accent); }
+  .metric { font-family: var(--mono); font-size: 26px; }
+  .metric small { font-size: 12px; color: var(--muted); font-family: var(--sans); display: block; }
+  .ta-wrap { position: relative; max-width: 460px; }
+  .ta-list { border: 1px solid var(--line); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+  .ta-item { padding: 9px 12px; font-family: var(--mono); font-size: 14px; border-top: 1px solid var(--line); cursor: pointer; }
+  .ta-item:first-child { border-top: none; }
+  .ta-item:hover { background: var(--accent-soft); }
+  .ta-item .mch { color: var(--accent); font-weight: 600; }
+  .ta-empty { padding: 9px 12px; color: var(--muted); font-size: 13px; }
+  .kbd { font-family: var(--mono); font-size: 11px; background: var(--code-bg); color: var(--code-ink); padding: 1px 6px; border-radius: 4px; }
+  code { font-family: var(--mono); background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+  .footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; text-align: center; }
+  @media (max-width: 560px) { .metric { font-size: 21px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Search &amp; Ranking — Interactive</h1>
+    <p>The same code the CLI phases run, wired to a browser so you can poke it. The through-line:
+       search <strong>inverts the work</strong> — pay the expensive cost at <em>index time</em> so
+       queries are cheap. Every panel below is one decision in that pipeline.</p>
+  </header>
+
+  <div class="mental">        INDEX TIME (expensive, offline)          QUERY TIME (cheap, online)
+  ┌─────────────────────────────────────┐   ┌──────────────────────────────────┐
+  │ analyze → inverted index             │   │ analyze query → retrieve (BM25)  │
+  │ precompute typeahead prefixes        │   │  → re-rank shortlist → results   │
+  │ build &amp; shard segments               │   │ scatter to shards → gather top-k │
+  └─────────────────────────────────────┘   └──────────────────────────────────┘</div>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <!-- ANALYZER -->
+  <section class="phase" data-tab="Analyzer">
+    <h2>Analysis — the pipeline both sides must share</h2>
+    <p class="lede">Before anything is indexed or queried, text goes through the same pipeline:
+      <code>lowercase → split on non-letters → drop stopwords → stem</code>. If the index and the query
+      analyze differently, nothing matches — the #1 real-world search bug. Type below and watch the tokens.</p>
+    <div class="card">
+      <label class="fld" for="anIn">Raw text</label>
+      <input type="text" id="anIn" value="Red Running Shoes for Men" />
+      <div style="margin-top:14px">
+        <div class="fld">1 · lowercase &amp; split</div><div class="chips" id="anSplit"></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="fld">2 · after stopwords removed &amp; stemmed <span style="opacity:.7">(struck-through = dropped stopword)</span></div>
+        <div class="chips" id="anStem"></div>
+      </div>
+      <div class="note">Stemming is what makes <code>Running Shoes</code> and <code>run shoe</code> collapse to the
+        same terms. Try <code>boxes</code>, <code>cushioned</code>, or <code>kids</code> to see the tiny stemmer fire.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 1 -->
+  <section class="phase" data-tab="1 · Inverted Index">
+    <h2>Phase 1 — The inverted index + boolean AND</h2>
+    <p class="lede">Invert doc→words into <strong>term→docs</strong> (the posting list) at build time, and
+      "which docs contain <em>shoes</em>?" becomes instant. A boolean AND query just intersects the posting lists.</p>
+    <div class="card">
+      <label class="fld" for="q1">Query (AND of all terms)</label>
+      <input type="text" id="q1" value="red running shoes" />
+      <div class="chips" id="q1terms" style="margin-top:10px"></div>
+      <div style="margin-top:16px" class="postings" id="q1postings"></div>
+      <h3 style="margin-top:18px">Intersection → matching docs</h3>
+      <div id="q1result"></div>
+      <div class="note">The index found candidates fast; it did <strong>not</strong> rank them. AND says <em>which</em>
+        docs match, not which match <em>best</em>. That's the next two phases.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 2 -->
+  <section class="phase" data-tab="2 · TF-IDF">
+    <h2>Phase 2 — TF-IDF ranking</h2>
+    <p class="lede">A results page needs an order. <code>score = Σ TF(term) × IDF(term)</code> — a rare word
+      (<code>IDF = log(N/df)</code>) that appears several times in a doc drives the ranking.</p>
+    <div class="card">
+      <label class="fld" for="q2">Query</label>
+      <input type="text" id="q2" value="red running shoes" />
+      <div class="chips" id="q2terms" style="margin-top:10px"></div>
+      <h3 style="margin-top:16px">Ranked results</h3>
+      <div id="q2result"></div>
+      <div class="note">TF-IDF has two flaws BM25 fixes next: TF grows without limit (keyword-stuffable),
+        and it doesn't normalize for length so long docs win unfairly.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 3 -->
+  <section class="phase" data-tab="3 · BM25">
+    <h2>Phase 3 — BM25 vs the two flaws</h2>
+    <p class="lede">Two extra docs join the corpus: a <span class="tag stuff">stuffed</span> doc (<code>shoes ×10</code>)
+      and a <span class="tag pad">padded</span> long doc. Watch TF-IDF get fooled by both while BM25 shrugs them off.
+      <code>k1</code> saturates term frequency; <code>b</code> normalizes length.</p>
+    <div class="card">
+      <label class="fld" for="q3">Query</label>
+      <input type="text" id="q3" value="running shoes" />
+      <div class="slider-row" style="margin-top:14px">
+        <label>k1 (TF saturation)</label>
+        <input type="range" id="k1" min="0" max="3" step="0.1" value="1.5" />
+        <output id="k1out">1.5</output>
+      </div>
+      <div class="slider-row">
+        <label>b (length norm)</label>
+        <input type="range" id="b" min="0" max="1" step="0.05" value="0.75" />
+        <output id="bout">0.75</output>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <h3>TF-IDF — gets fooled</h3>
+          <div id="q3tfidf"></div>
+        </div>
+        <div>
+          <h3>BM25 — saturates &amp; normalizes</h3>
+          <div id="q3bm25"></div>
+        </div>
+      </div>
+      <div class="note" id="q3note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 4 -->
+  <section class="phase" data-tab="4 · Retrieve → Rank">
+    <h2>Phase 4 — Retrieve-then-rank funnel</h2>
+    <p class="lede">Never score every doc with the rich model. <strong>Retrieve</strong> a cheap BM25 shortlist
+      (recall), then <strong>re-rank</strong> only those with expensive signals — popularity, recency, exact-match (precision).</p>
+    <div class="card">
+      <label class="fld" for="q4">Query</label>
+      <input type="text" id="q4" value="running shoes" />
+      <div class="slider-row" style="margin-top:14px"><label>weight: BM25</label><input type="range" id="wB" min="0" max="1" step="0.05" value="0.4"><output id="wBout">0.40</output></div>
+      <div class="slider-row"><label>weight: popularity</label><input type="range" id="wP" min="0" max="1" step="0.05" value="0.35"><output id="wPout">0.35</output></div>
+      <div class="slider-row"><label>weight: recency</label><input type="range" id="wR" min="0" max="1" step="0.05" value="0.15"><output id="wRout">0.15</output></div>
+      <div class="slider-row"><label>weight: exact match</label><input type="range" id="wE" min="0" max="1" step="0.05" value="0.10"><output id="wEout">0.10</output></div>
+      <div class="row" style="margin-top:8px">
+        <div><h3>1 · Retrieve (BM25, cheap)</h3><div id="q4retrieve"></div></div>
+        <div><h3>2 · Re-rank (rich, expensive)</h3><div id="q4rank"></div></div>
+      </div>
+      <div class="note" id="q4note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 5 -->
+  <section class="phase" data-tab="5 · Scatter-Gather">
+    <h2>Phase 5 — Scatter-gather &amp; tail latency</h2>
+    <p class="lede">Shard by document, scatter the query to every shard, gather their local top-k. The tax:
+      the query is only as fast as the <strong>slowest</strong> shard — and more shards means a worse tail.</p>
+    <div class="card">
+      <h3>5 shards — shard 3 is having a bad moment (300ms)</h3>
+      <div class="shards" id="shards"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <button class="act" id="runNaive">Run naive scatter-gather</button>
+        <button class="act ghost" id="runHedge">Run with hedging (replica @50ms)</button>
+        <div class="metric" style="margin-left:auto" id="sgTime">—<small>wall-clock</small></div>
+      </div>
+      <div class="note" id="sgNote">Naive waits for all shards → bound by the 300ms laggard. Hedging re-sends the
+        laggard to a replica after 50ms and takes whichever answers first.</div>
+    </div>
+    <div class="card">
+      <h3>Why p99 gets worse as you scale out</h3>
+      <p style="color:var(--muted); font-size:13.5px; margin-top:0">If a single shard is slow just
+        <strong>1%</strong> of the time, the chance a query touches <em>at least one</em> slow shard is
+        <code>1 − 0.99^S</code>:</p>
+      <table><thead><tr><th>Shards</th><th>P(query hits ≥1 slow shard)</th><th></th></tr></thead>
+        <tbody id="tailTable"></tbody></table>
+      <div class="note">More shards = better throughput but worse tail. Hedging &amp; early-termination are how you
+        claw p99 back. This is the defining operational fact of scatter-gather.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 6 -->
+  <section class="phase" data-tab="6 · Typeahead">
+    <h2>Phase 6 — Typeahead (precomputed prefixes)</h2>
+    <p class="lede">Suggestions must appear in &lt;50ms — no time to search per keystroke. So it's a build-time
+      problem: precompute top-K completions <strong>per prefix</strong>. Query time is one O(1) point lookup, no ranking.</p>
+    <div class="card">
+      <label class="fld" for="ta">Start typing a query</label>
+      <div class="ta-wrap">
+        <input type="text" id="ta" placeholder="try: r · re · red · runn · running s" autocomplete="off" />
+        <div class="ta-list" id="taList"></div>
+      </div>
+      <p style="color:var(--muted); font-size:13px; margin:14px 0 0">
+        Built <span id="taCount" class="kbd">0</span> prefixes offline from a 12-query log. Each keystroke is a hash
+        hit on that table — nothing is ranked online. Production layers a client-side debounce/cache (tier zero) and a
+        trending lane gated by k-distinct-users on top.</p>
+    </div>
+  </section>
+
+  <div class="footer">Faithful browser port of the <code>src/phase*</code> scripts · same analyzer, BM25, re-ranker &amp; prefix table · MIT</div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   Faithful port of src/lib/corpus.ts — analyzer + corpus
+   ───────────────────────────────────────────────────────────────────────── */
+const CORPUS = [
+  { id: 1, text: "Red running shoes for men, lightweight and breathable" },
+  { id: 2, text: "Blue running shoes women, cushioned marathon trainers" },
+  { id: 3, text: "Waterproof hiking boots, rugged trail running approach shoes" },
+  { id: 4, text: "Running socks, moisture-wicking, pack of six pairs" },
+  { id: 5, text: "Red leather dress shoes for men, formal Oxford style" },
+  { id: 6, text: "Kids running shoes, red and blue, durable playground sneakers" },
+  { id: 7, text: "Trail running vest with hydration bladder for ultra running" },
+  { id: 8, text: "Classic red high-top canvas sneakers, unisex casual shoes" },
+];
+const STOPWORDS = new Set(["for","and","the","with","of","a","an","to","in","is","pack"]);
+function stem(token) {
+  let t = token.toLowerCase();
+  if (/(sses|shes|ches|xes)$/.test(t)) t = t.slice(0, -2);
+  else if (/[^s]s$/.test(t)) t = t.slice(0, -1);
+  if (/ing$/.test(t) && t.length > 5) { t = t.slice(0, -3); if (/(.)\1$/.test(t)) t = t.slice(0, -1); }
+  else if (/ed$/.test(t) && t.length > 4) t = t.slice(0, -2);
+  return t;
+}
+function analyze(text) {
+  return text.toLowerCase().split(/[^a-z0-9]+/).filter(t => t && !STOPWORDS.has(t)).map(stem).filter(Boolean);
+}
+const docById = id => CORPUS.find(d => d.id === id) || DOCS.find(d => d.id === id);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Tabs
+   ───────────────────────────────────────────────────────────────────────── */
+const sections = [...document.querySelectorAll('section.phase')];
+const tabsEl = document.getElementById('tabs');
+sections.forEach((sec, i) => {
+  const b = document.createElement('button');
+  b.textContent = sec.dataset.tab;
+  b.onclick = () => activate(i);
+  tabsEl.appendChild(b);
+});
+function activate(i) {
+  sections.forEach((s, j) => s.classList.toggle('active', i === j));
+  [...tabsEl.children].forEach((b, j) => b.classList.toggle('active', i === j));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+activate(0);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Analyzer panel
+   ───────────────────────────────────────────────────────────────────────── */
+const anIn = document.getElementById('anIn');
+function renderAnalyzer() {
+  const raw = anIn.value;
+  const split = raw.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  document.getElementById('anSplit').innerHTML = split.map(t => `<span class="chip">${t}</span>`).join('') || '<span class="ta-empty">—</span>';
+  const stem = document.getElementById('anStem');
+  stem.innerHTML = split.map(t => {
+    if (STOPWORDS.has(t)) return `<span class="chip dim">${t}</span>`;
+    const s = window.stemPort(t);
+    return `<span class="chip">${s}</span>`;
+  }).join('') || '<span class="ta-empty">—</span>';
+}
+window.stemPort = stem; // expose the real stem fn
+anIn.addEventListener('input', renderAnalyzer);
+renderAnalyzer();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 1 — inverted index + AND
+   ───────────────────────────────────────────────────────────────────────── */
+const INDEX = new Map();
+for (const doc of CORPUS) for (const term of new Set(analyze(doc.text))) {
+  (INDEX.get(term) || INDEX.set(term, []).get(term)).push(doc.id);
+}
+const q1 = document.getElementById('q1');
+function renderP1() {
+  const terms = analyze(q1.value);
+  document.getElementById('q1terms').innerHTML = terms.map(t => `<span class="chip">${t}</span>`).join('');
+  const post = document.getElementById('q1postings');
+  post.innerHTML = terms.map(t => {
+    const list = INDEX.get(t) || [];
+    return `<div><span class="term">"${t}"</span>→ [${list.join(', ') || '∅'}]</div>`;
+  }).join('') || '<span class="ta-empty">enter a query</span>';
+  const lists = terms.map(t => new Set(INDEX.get(t) || []));
+  let result = [];
+  if (lists.length) result = [...lists[0]].filter(id => lists.every(s => s.has(id))).sort((a,b)=>a-b);
+  const out = document.getElementById('q1result');
+  out.innerHTML = result.length
+    ? `<table><tbody>${result.map(id => `<tr><td class="num">doc ${id}</td><td class="doc-text">${hlDoc(docById(id).text, terms)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="ta-empty">no docs contain all terms</div>';
+}
+function hlDoc(text, terms) {
+  return text.split(/(\s+)/).map(w => {
+    const bare = w.replace(/[^a-z0-9]/gi, '');
+    if (bare && terms.includes(stem(bare.toLowerCase()))) return `<span class="hl">${w}</span>`;
+    return w;
+  }).join('');
+}
+q1.addEventListener('input', renderP1); renderP1();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 2 — TF-IDF
+   ───────────────────────────────────────────────────────────────────────── */
+function buildTfIdf(docs) {
+  const postings = new Map(); const N = docs.length;
+  for (const doc of docs) for (const term of analyze(doc.text)) {
+    const m = postings.get(term) || new Map(); m.set(doc.id, (m.get(doc.id)||0)+1); postings.set(term, m);
+  }
+  const idf = term => { const df = postings.get(term)?.size || 0; return df===0?0:Math.log(N/df); };
+  return { search(query) {
+    const scores = new Map();
+    for (const term of analyze(query)) { const w = idf(term);
+      for (const [id, tf] of postings.get(term) || []) scores.set(id, (scores.get(id)||0)+tf*w); }
+    return [...scores.entries()].sort((a,b)=>b[1]-a[1]);
+  }};
+}
+const TFIDF = buildTfIdf(CORPUS);
+const q2 = document.getElementById('q2');
+function renderP2() {
+  const terms = analyze(q2.value);
+  document.getElementById('q2terms').innerHTML = terms.map(t=>`<span class="chip">${t}</span>`).join('');
+  const res = TFIDF.search(q2.value);
+  document.getElementById('q2result').innerHTML = res.length ? scoreTable(res, terms) : '<div class="ta-empty">no matches</div>';
+}
+function scoreTable(res, terms, tagFn) {
+  const max = res[0]?.[1] || 1;
+  return `<table><thead><tr><th>#</th><th>score</th><th>doc</th></tr></thead><tbody>${
+    res.map(([id, s], i) => `<tr>
+      <td class="rank">${i+1}</td>
+      <td class="num">${s.toFixed(3)}<div class="bar" style="width:${Math.max(3,(s/max)*100)}%"></div></td>
+      <td><span class="num">doc ${id}</span>${tagFn?tagFn(id):''}<div class="doc-text" style="font-size:12.5px">${hlDoc(docById(id).text, terms)}</div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+q2.addEventListener('input', renderP2); renderP2();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 3 — BM25 vs TF-IDF (extended corpus)
+   ───────────────────────────────────────────────────────────────────────── */
+const DOCS = [...CORPUS,
+  { id: 100, text: "shoes shoes shoes shoes shoes shoes shoes shoes shoes shoes cheap deal" },
+  { id: 101, text: "red running shoes " + "extra filler words about socks laces trails ".repeat(12) },
+];
+function buildRanker(docs) {
+  const postings = new Map(); const docLen = new Map(); const N = docs.length; let total = 0;
+  for (const doc of docs) { const terms = analyze(doc.text); docLen.set(doc.id, terms.length); total += terms.length;
+    for (const term of terms) { const m = postings.get(term)||new Map(); m.set(doc.id,(m.get(doc.id)||0)+1); postings.set(term,m); } }
+  const avg = total/N;
+  const idfBM = t => { const df = postings.get(t)?.size||0; return df===0?0:Math.log(1+(N-df+0.5)/(df+0.5)); };
+  return {
+    tfidf(query) { const scores = new Map();
+      for (const t of analyze(query)) { const idf = Math.log(N/(postings.get(t)?.size||N));
+        for (const [id, tf] of postings.get(t)||[]) scores.set(id,(scores.get(id)||0)+tf*idf); }
+      return top(scores); },
+    bm25(query, k1, b) { const scores = new Map();
+      for (const t of analyze(query)) { const idf = idfBM(t);
+        for (const [id, tf] of postings.get(t)||[]) { const norm = tf*(k1+1)/(tf+k1*(1-b+b*(docLen.get(id)/avg)));
+          scores.set(id,(scores.get(id)||0)+idf*norm); } }
+      return top(scores); },
+  };
+  function top(scores){ return [...scores.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5); }
+}
+const RANKER = buildRanker(DOCS);
+const q3 = document.getElementById('q3'), k1El = document.getElementById('k1'), bEl = document.getElementById('b');
+function docTag(id){ return id===100?'<span class="tag stuff">stuffed</span>':id===101?'<span class="tag pad">padded</span>':''; }
+function renderP3() {
+  const k1 = parseFloat(k1El.value), b = parseFloat(bEl.value);
+  document.getElementById('k1out').textContent = k1.toFixed(1);
+  document.getElementById('bout').textContent = b.toFixed(2);
+  const terms = analyze(q3.value);
+  const ti = RANKER.tfidf(q3.value), bm = RANKER.bm25(q3.value, k1, b);
+  document.getElementById('q3tfidf').innerHTML = scoreTable(ti, terms, docTag);
+  document.getElementById('q3bm25').innerHTML = scoreTable(bm, terms, docTag);
+  const stuffedTfRank = ti.findIndex(([id])=>id===100);
+  const stuffedBmRank = bm.findIndex(([id])=>id===100);
+  document.getElementById('q3note').innerHTML =
+    `The <span class="tag stuff">stuffed</span> doc ranks <strong>#${stuffedTfRank<0?'off-list':stuffedTfRank+1}</strong> in TF-IDF but ` +
+    `<strong>${stuffedBmRank<0?'drops off the page':'#'+(stuffedBmRank+1)}</strong> in BM25. ` +
+    `Slide <code>k1→0</code> to crush TF entirely, or <code>b→0</code> to turn off length normalization and watch the padded doc climb.`;
+}
+q3.addEventListener('input', renderP3); k1El.addEventListener('input', renderP3); bEl.addEventListener('input', renderP3); renderP3();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 4 — retrieve then rank
+   ───────────────────────────────────────────────────────────────────────── */
+const POPULARITY = {1:0.3,2:0.9,3:0.4,4:0.2,5:0.5,6:0.95,7:0.1,8:0.6};
+const DAYS_OLD  = {1:200,2:5,3:90,4:400,5:30,6:2,7:150,8:60};
+function bm25Retrieve(query, docs) {
+  const postings = new Map(); const len = new Map(); let total = 0;
+  for (const d of docs) { const terms = analyze(d.text); len.set(d.id, terms.length); total += terms.length;
+    for (const t of terms) { const m = postings.get(t)||new Map(); m.set(d.id,(m.get(d.id)||0)+1); postings.set(t,m); } }
+  const avg = total/docs.length, k1 = 1.5, b = 0.75, N = docs.length;
+  const scores = new Map();
+  for (const t of analyze(query)) { const df = postings.get(t)?.size||0; if(!df) continue;
+    const idf = Math.log(1+(N-df+0.5)/(df+0.5));
+    for (const [id, tf] of postings.get(t)) { const norm = tf*(k1+1)/(tf+k1*(1-b+b*(len.get(id)/avg)));
+      scores.set(id,(scores.get(id)||0)+idf*norm); } }
+  return [...scores.entries()].map(([id,score])=>({id,score})).sort((a,b)=>b.score-a.score);
+}
+const q4 = document.getElementById('q4');
+const wEls = { B: document.getElementById('wB'), P: document.getElementById('wP'), R: document.getElementById('wR'), E: document.getElementById('wE') };
+function renderP4() {
+  for (const k in wEls) document.getElementById('w'+k+'out').textContent = parseFloat(wEls[k].value).toFixed(2);
+  const wB=+wEls.B.value, wP=+wEls.P.value, wR=+wEls.R.value, wE=+wEls.E.value;
+  const query = q4.value, terms = analyze(query);
+  const candidates = bm25Retrieve(query, CORPUS).slice(0,5);
+  document.getElementById('q4retrieve').innerHTML = candidates.length ? `<table><thead><tr><th>#</th><th>bm25</th><th>doc</th></tr></thead><tbody>${
+    candidates.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="num">${c.score.toFixed(3)}</td><td><span class="num">doc ${c.id}</span><div class="doc-text" style="font-size:12.5px">${docById(c.id).text.slice(0,40)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="ta-empty">no candidates</div>';
+  const reranked = candidates.map(c => {
+    const exact = docById(c.id).text.toLowerCase().includes(query.toLowerCase()) && query.trim() ? 1 : 0;
+    const recency = 1/(1+DAYS_OLD[c.id]/30);
+    const final = wB*c.score + wP*POPULARITY[c.id] + wR*recency + wE*exact;
+    return { ...c, final, pop: POPULARITY[c.id], recency, exact };
+  }).sort((a,b)=>b.final-a.final);
+  document.getElementById('q4rank').innerHTML = reranked.length ? `<table><thead><tr><th>#</th><th>final</th><th>doc · signals</th></tr></thead><tbody>${
+    reranked.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="num">${c.final.toFixed(3)}</td><td><span class="num">doc ${c.id}</span>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">pop ${c.pop} · rec ${c.recency.toFixed(2)} · exact ${c.exact}</div>
+      <div class="doc-text" style="font-size:12.5px">${docById(c.id).text.slice(0,32)}</div></td></tr>`).join('')}</tbody></table>` : '';
+  const before = candidates.map(c=>c.id).join(','), after = reranked.map(c=>c.id).join(',');
+  document.getElementById('q4note').innerHTML = `order changed: <code>[${before}]</code> → <code>[${after}]</code>. ` +
+    `The rich model only ran on <strong>${candidates.length}</strong> candidates — never the whole corpus. Drag the weights: crank popularity and the fresh, popular docs (2 &amp; 6) dominate; zero it and BM25 order returns.`;
+}
+q4.addEventListener('input', renderP4);
+Object.values(wEls).forEach(el => el.addEventListener('input', renderP4));
+renderP4();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 5 — scatter-gather (animated) + tail math
+   ───────────────────────────────────────────────────────────────────────── */
+const LAT = [20,25,18,300,22];
+const shardsEl = document.getElementById('shards');
+function paintShards(state) { // state: array of {cls, txt}
+  shardsEl.innerHTML = LAT.map((lat,i)=>{
+    const s = state[i] || {};
+    return `<div class="shard ${s.cls||''}"><div class="sid">shard ${i}</div><div class="lat">${s.txt ?? lat+'ms'}</div></div>`;
+  }).join('');
+}
+paintShards([]);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+let running = false;
+async function runScatter(hedge) {
+  if (running) return; running = true;
+  document.querySelectorAll('#runNaive,#runHedge').forEach(b=>b.disabled=true);
+  const start = performance.now();
+  const state = LAT.map(()=>({cls:'waiting', txt:'…'}));
+  paintShards(state);
+  const tasks = LAT.map(async (lat,i) => {
+    const isSlow = lat > 50;
+    if (hedge && isSlow) {
+      // race real shard vs hedged replica launched at 50ms (30ms)
+      const real = sleep(lat).then(()=>({who:'primary', at:lat}));
+      const replica = sleep(50+30).then(()=>({who:'replica', at:80}));
+      const winner = await Promise.race([real, replica]);
+      state[i] = { cls: winner.who==='replica'?'hedged':'done', txt: winner.at+'ms' };
+    } else {
+      await sleep(lat);
+      state[i] = { cls: isSlow?'slow':'done', txt: lat+'ms' };
+    }
+    paintShards(state);
+  });
+  await Promise.all(tasks);
+  const wall = Math.round(performance.now()-start);
+  document.getElementById('sgTime').innerHTML = `${wall}ms<small>wall-clock</small>`;
+  document.getElementById('sgNote').innerHTML = hedge
+    ? `<strong>~80ms.</strong> The hedge (50ms wait + 30ms replica) beat the 300ms shard — the aggregator never waited on the laggard.`
+    : `<strong>~300ms.</strong> Every shard answered, but the aggregator was bound by the single slow shard. That's tail latency.`;
+  document.querySelectorAll('#runNaive,#runHedge').forEach(b=>b.disabled=false);
+  running = false;
+}
+document.getElementById('runNaive').onclick = ()=>runScatter(false);
+document.getElementById('runHedge').onclick = ()=>runScatter(true);
+document.getElementById('tailTable').innerHTML = [1,10,50,100].map(S=>{
+  const p = 1-Math.pow(0.99,S);
+  return `<tr><td class="num">${S}</td><td class="num">${(p*100).toFixed(1)}%</td><td style="width:55%"><div class="bar" style="width:${p*100}%;background:${p>0.5?'var(--bad)':'var(--accent)'}"></div></td></tr>`;
+}).join('');
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 6 — typeahead (prefix table, built offline)
+   ───────────────────────────────────────────────────────────────────────── */
+const QUERY_LOG = [
+  ["red running shoes",9000],["red dress",7000],["red lipstick",6500],
+  ["running shoes men",8000],["running shorts",3000],["running watch",2500],
+  ["reebok shoes",1800],["red roses",4000],["rain jacket",2200],
+  ["running socks",900],["red backpack",1500],["red wine",5000],
+];
+const K = 4;
+function buildPrefixTable() {
+  const buckets = new Map();
+  for (const [query,freq] of QUERY_LOG) for (let i=1;i<=query.length;i++){
+    const p = query.slice(0,i); const arr = buckets.get(p)||[]; arr.push([query,freq]); buckets.set(p,arr);
+  }
+  const table = new Map();
+  for (const [p,arr] of buckets) table.set(p, arr.sort((a,b)=>b[1]-a[1]).slice(0,K).map(([q])=>q));
+  return table;
+}
+const TABLE = buildPrefixTable();
+document.getElementById('taCount').textContent = TABLE.size;
+const ta = document.getElementById('ta'), taList = document.getElementById('taList');
+function renderTypeahead() {
+  const prefix = ta.value.toLowerCase();
+  if (!prefix) { taList.innerHTML=''; return; }
+  const sugg = TABLE.get(prefix) || [];
+  taList.innerHTML = sugg.length ? sugg.map(s =>
+    `<div class="ta-item" data-q="${s}"><span class="mch">${s.slice(0,prefix.length)}</span>${s.slice(prefix.length)}</div>`
+  ).join('') : `<div class="ta-empty">no precomputed completions for "${prefix}"</div>`;
+  taList.querySelectorAll('.ta-item').forEach(el => el.onclick = () => { ta.value = el.dataset.q; renderTypeahead(); });
+}
+ta.addEventListener('input', renderTypeahead);
+</script>
+</body>
+</html>
