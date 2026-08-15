@@ -92,11 +92,16 @@
   .side-foot { margin-top: auto; padding: 15px 11px 2px; font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--muted); }
   .side-foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
   .side-foot a:hover { color: var(--accent); border-color: var(--accent); }
-  .side-sample { margin-top: 16px; padding: 13px 11px 0; border-top: 1px solid var(--line); }
-  .side-sample label { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-  .side-sample input { width: 100%; font-family: var(--mono); font-size: 12px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); }
-  .side-sample input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
-  .side-sample p { font-size: 10.5px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+  .corpus-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 720px) { .corpus-grid { grid-template-columns: 1fr; } }
+  textarea.corpus { width: 100%; min-height: 210px; resize: vertical; font-family: var(--mono); font-size: 13px; line-height: 1.7;
+    padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--ink); }
+  textarea.corpus:focus { outline: none; border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .corpus-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .corpus-status { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .corpus-flow { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  .corpus-flow li { margin: 4px 0; }
+  .corpus-flow code { font-size: .9em; }
   .main { flex: 1; min-width: 0; padding: 42px clamp(24px, 4vw, 60px) 100px; }
   .main-inner { max-width: 940px; margin: 0 auto; }
   .topbar, .backdrop { display: none; }
@@ -279,11 +284,6 @@
       <span class="wm"><b>Search Systems</b><span>Interactive lab</span></span>
     </div>
     <nav class="nav" id="nav" aria-label="Lessons"></nav>
-    <div class="side-sample">
-      <label for="sampleText">Sample text</label>
-      <input type="text" id="sampleText" value="Red Running Shoes for Men" spellcheck="false" autocomplete="off" />
-      <p>Edit to push it through the analyzer &amp; query panels.</p>
-    </div>
     <div class="side-foot">Runnable ports of the CLI phases.<br /><a href="https://github.com/swapnull-in/search-and-ranking" target="_blank" rel="noopener">View source ↗</a></div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
@@ -325,6 +325,41 @@
     </div>
     <p class="overview-hint"><b>Start anywhere in the sidebar.</b> Lessons run beginner → staff, top to bottom:
       foundations, then ranking, modern relevance, and finally systems &amp; scale.</p>
+  </section>
+
+  <!-- CORPUS -->
+  <section class="phase" data-tab="Corpus">
+    <h2>Corpus — set the documents</h2>
+    <p class="lede">Everything downstream is built from these documents. Edit them here (one per line) and the
+      <em>whole lab</em> rebuilds end-to-end — the inverted index, TF-IDF, BM25, phrases, fuzzy vocabulary,
+      vectors, and boolean/WAND all re-derive from your text.</p>
+    <div class="card">
+      <div class="corpus-grid">
+        <div>
+          <label class="fld" for="corpusBox">Documents · one per line</label>
+          <textarea class="corpus" id="corpusBox" spellcheck="false"></textarea>
+          <label class="fld" for="corpusQuery" style="margin-top:14px">Default query · used across the query panels</label>
+          <input type="text" id="corpusQuery" placeholder="e.g. red running shoes" spellcheck="false" autocomplete="off" />
+          <div class="corpus-actions">
+            <button class="act" id="corpusApply">Apply &amp; rebuild</button>
+            <button class="act ghost" id="corpusReset">Reset to sample</button>
+            <span class="corpus-status" id="corpusStatus"></span>
+          </div>
+        </div>
+        <div>
+          <h3>What rebuilds</h3>
+          <ol class="corpus-flow">
+            <li><code>analyze()</code> → the <b>inverted index</b> &amp; positions</li>
+            <li>term frequencies → <b>TF-IDF</b> and <b>BM25</b></li>
+            <li>raw tokens → the <b>fuzzy</b> spell-check vocabulary</li>
+            <li>concept map → the <b>semantic vectors</b></li>
+            <li>postings + max scores → <b>boolean + WAND</b></li>
+          </ol>
+          <div class="note">Applying saves your corpus in the browser and reloads so every panel re-derives cleanly.
+            The two BM25 demo docs (a keyword-stuffed and a padded one) are still appended on the BM25 panel.</div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ANALYZER -->
@@ -708,7 +743,7 @@
 /* ─────────────────────────────────────────────────────────────────────────
    Faithful port of src/lib/corpus.ts — analyzer + corpus
    ───────────────────────────────────────────────────────────────────────── */
-const CORPUS = [
+const DEFAULT_CORPUS = [
   { id: 1, text: "Red running shoes for men, lightweight and breathable" },
   { id: 2, text: "Blue running shoes women, cushioned marathon trainers" },
   { id: 3, text: "Waterproof hiking boots, rugged trail running approach shoes" },
@@ -718,6 +753,13 @@ const CORPUS = [
   { id: 7, text: "Trail running vest with hydration bladder for ultra running" },
   { id: 8, text: "Classic red high-top canvas sneakers, unisex casual shoes" },
 ];
+/** Documents are editable in the Corpus panel and persisted in localStorage; the
+ *  whole page rebuilds from them on reload, so every panel stays end-to-end consistent. */
+const parseCorpusText = t => t.split('\n').map(s => s.trim()).filter(Boolean).map((text, i) => ({ id: i + 1, text }));
+const corpusToText = c => c.map(d => d.text).join('\n');
+let CORPUS;
+try { const s = localStorage.getItem('sr-corpus'); const p = s ? parseCorpusText(s) : null; CORPUS = (p && p.length) ? p : DEFAULT_CORPUS.map(d => ({ ...d })); }
+catch { CORPUS = DEFAULT_CORPUS.map(d => ({ ...d })); }
 const STOPWORDS = new Set(["for","and","the","with","of","a","an","to","in","is","pack"]);
 function stem(token) {
   let t = token.toLowerCase();
@@ -744,7 +786,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const closeNav = () => appEl.classList.remove('nav-open');
 /** Beginner → staff tiers, keyed by slug (DOM order is grouped to match). */
 const TIER_OF = {
-  'overview': 'Overview',
+  'overview': 'Overview', 'corpus': 'Overview',
   'analyzer': 'Foundations', '1-inverted-index': 'Foundations', '2-tf-idf': 'Foundations',
   '3-bm25': 'Ranking', '4-retrieve-rank': 'Ranking',
   '7-phrase-position': 'Relevance & ranking', '8-fuzzy-spelling': 'Relevance & ranking',
@@ -1026,9 +1068,10 @@ function renderP4() {
     candidates.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="num">${c.score.toFixed(3)}</td><td><span class="num">doc ${c.id}</span><div class="doc-text" style="font-size:12.5px">${docById(c.id).text.slice(0,40)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="ta-empty">no candidates</div>';
   const reranked = candidates.map(c => {
     const exact = docById(c.id).text.toLowerCase().includes(query.toLowerCase()) && query.trim() ? 1 : 0;
-    const recency = 1/(1+DAYS_OLD[c.id]/30);
-    const final = wB*c.score + wP*POPULARITY[c.id] + wR*recency + wE*exact;
-    return { ...c, final, pop: POPULARITY[c.id], recency, exact };
+    const pop = POPULARITY[c.id] ?? 0.5;               // sane defaults for custom docs
+    const recency = 1/(1+(DAYS_OLD[c.id] ?? 120)/30);
+    const final = wB*c.score + wP*pop + wR*recency + wE*exact;
+    return { ...c, final, pop, recency, exact };
   }).sort((a,b)=>b.final-a.final);
   document.getElementById('q4rank').innerHTML = reranked.length ? `<table><thead><tr><th>#</th><th>final</th><th>doc · signals</th></tr></thead><tbody>${
     reranked.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="num">${c.final.toFixed(3)}</td><td><span class="num">doc ${c.id}</span>
@@ -1557,18 +1600,40 @@ evalKEl.addEventListener('input', renderEval); renderEval();
 })();
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Shared "sample text" — one sidebar field feeds the free-text panels.
-   Excludes the fuzzy typo box and the typeahead prefix (different input kinds).
+   Corpus editor — set the documents once; the whole lab rebuilds on reload.
+   A saved default query is broadcast to the free-text query panels
+   (the fuzzy typo box and typeahead prefix take a different input, so skip them).
    ───────────────────────────────────────────────────────────────────────── */
-const SAMPLE_TARGETS = ['anIn', 'q1', 'q2', 'q3', 'q4', 'q7', 'q9', 'q10', 'q14', 'q15'];
-const sampleText = document.getElementById('sampleText');
-sampleText?.addEventListener('input', () => {
-  const v = sampleText.value;
-  for (const id of SAMPLE_TARGETS) {
+const QUERY_TARGETS = ['q1', 'q2', 'q3', 'q4', 'q7', 'q9', 'q10', 'q14', 'q15'];
+(function () {
+  const box = document.getElementById('corpusBox');
+  const qIn = document.getElementById('corpusQuery');
+  const status = document.getElementById('corpusStatus');
+  box.value = corpusToText(CORPUS);
+  let storedQuery = '';
+  try { storedQuery = localStorage.getItem('sr-query') || ''; } catch {}
+  qIn.value = storedQuery;
+  const usingCustom = (() => { try { return !!localStorage.getItem('sr-corpus'); } catch { return false; } })();
+  status.textContent = `${CORPUS.length} document(s) · ${usingCustom ? 'custom (saved)' : 'sample default'}`;
+  // Push a saved default query into the panels on load.
+  if (storedQuery) for (const id of QUERY_TARGETS) {
     const el = document.getElementById(id);
-    if (el && el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    if (el) { el.value = storedQuery; el.dispatchEvent(new Event('input', { bubbles: true })); }
   }
-});
+  document.getElementById('corpusApply').onclick = () => {
+    const docs = parseCorpusText(box.value);
+    if (!docs.length) { status.textContent = 'Add at least one document.'; return; }
+    try {
+      localStorage.setItem('sr-corpus', docs.map(d => d.text).join('\n'));
+      if (qIn.value.trim()) localStorage.setItem('sr-query', qIn.value.trim()); else localStorage.removeItem('sr-query');
+    } catch {}
+    location.reload();
+  };
+  document.getElementById('corpusReset').onclick = () => {
+    try { localStorage.removeItem('sr-corpus'); localStorage.removeItem('sr-query'); } catch {}
+    location.reload();
+  };
+})();
 </script>
 </body>
 </html>
