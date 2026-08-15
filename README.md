@@ -55,8 +55,16 @@ Work top to bottom; each tier assumes the one above.
 
 | Command | What you learn |
 |---|---|
-| `npm run phase5` | **Scatter-gather** — sharding, aggregation, and tail latency |
-| `npm run phase6` | **Typeahead** — top-K per prefix precomputed at build time |
+| `npm run phase5`  | **Scatter-gather** — sharding, aggregation, and tail latency |
+| `npm run phase6`  | **Typeahead** — top-K per prefix precomputed at build time |
+| `npm run phase13` | **Segments & freshness** — immutable segments, refresh/merge, search lag ("why isn't my write showing up?") |
+| `npm run phase14` | **Facets & filters** — the forward index / doc-values; cached score-free filters, facet aggregations |
+| `npm run phase15` | **Boolean + WAND** — AND/OR/NOT, and Block-Max WAND skipping docs that can't reach the top-K |
+| `npm run phase16` | **Reindex & aliases** — zero-downtime blue-green reindex + shard routing |
+
+See [`COVERAGE.md`](COVERAGE.md) for how the phases map to a full Staff-level search
+syllabus, and what's still on the roadmap (indexing pipeline / CDC, hot-warm-cold,
+capacity planning, a system-design capstone).
 
 ## Interactive web demo
 
@@ -81,6 +89,10 @@ phases above, made interactive:
 - **Evaluation** — reorder Ranking B with ↑↓ and watch Precision@k stay put while NDCG moves
 - **Scatter-gather** — animate a 5-shard query, then hedge the slow shard away; plus the p99 tail-latency math
 - **Typeahead** — real precomputed prefix table, suggestions narrow as you type
+- **Segments & freshness** — write a doc and watch search *not* see it until you refresh (but `getById` does); update to grow tombstones, merge to purge them
+- **Facets & filters** — toggle brand/price/stock filters and watch results narrow while scores stay identical; facet counts recompute over doc-values
+- **Boolean + WAND** — AND/OR/NOT result sets, and a live "docs scored: naive vs WAND" count proving WAND skips work for the same top-K
+- **Reindex & aliases** — step through a blue-green reindex: build v2, backfill, atomically swap the alias, roll back — with a live shard-routing table
 
 The sidebar groups the lessons into the **Foundations → Ranking → Relevance → Systems**
 tiers above. Navigation is keyboard-friendly (↑/↓ arrows) and deep-linkable
@@ -159,6 +171,10 @@ src/
   phase10/ hybrid search + reciprocal rank fusion
   phase11/ learning to rank (pairwise)
   phase12/ offline evaluation metrics
+  phase13/ immutable segments, refresh/merge, search lag
+  phase14/ forward index / doc-values: facets & filters
+  phase15/ boolean OR/NOT + Block-Max WAND
+  phase16/ zero-downtime reindex with aliases + routing
 web/
   index.html  ·  serve.mjs   (interactive demo of every phase — npm run web)
 ```

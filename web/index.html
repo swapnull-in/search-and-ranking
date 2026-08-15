@@ -597,6 +597,98 @@
     </div>
   </section>
 
+  <!-- PHASE 13 -->
+  <section class="phase" data-tab="13 · Segments &amp; Freshness">
+    <h2>Phase 13 — Segments, refresh &amp; search lag</h2>
+    <p class="lede">Lucene segments are <strong>immutable</strong>. A write lands in a buffer (durable via the translog)
+      but isn't searchable until the next <strong>refresh</strong> seals a new segment — so search is
+      <em>near</em>-real-time, not real-time. An update is delete-then-reindex; <strong>merge</strong> purges the tombstones.</p>
+    <div class="card">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px">
+        <button class="act" id="segWrite">Write a doc</button>
+        <button class="act" id="segRefresh">Refresh</button>
+        <button class="act ghost" id="segUpdate">Update a doc</button>
+        <button class="act ghost" id="segMerge">Merge</button>
+        <button class="act ghost" id="segReset">Reset</button>
+      </div>
+      <div class="row">
+        <div>
+          <h3>Buffer <span style="text-transform:none;letter-spacing:0;font-weight:400">· durable, not searchable</span></h3>
+          <div id="segBuffer"></div>
+          <h3 style="margin-top:16px">Segments (immutable)</h3>
+          <div id="segSegments"></div>
+        </div>
+        <div>
+          <h3>search("widget") <span style="text-transform:none;letter-spacing:0;font-weight:400">· segments only</span></h3>
+          <div id="segSearch"></div>
+          <h3 style="margin-top:16px">get by id <span style="text-transform:none;letter-spacing:0;font-weight:400">· real-time</span></h3>
+          <div id="segGet"></div>
+        </div>
+      </div>
+      <div class="note" id="segNote"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 14 -->
+  <section class="phase" data-tab="14 · Facets &amp; Filters">
+    <h2>Phase 14 — Facets &amp; filters (the forward index)</h2>
+    <p class="lede">The inverted index finds matches; the <strong>forward index / doc-values</strong> (a columnar per-doc
+      store) powers sort, filters, and facet counts. Filters are cached, <strong>score-free</strong> set intersections;
+      facets are aggregations over doc-values — which is why you facet on a keyword field, never analyzed text.</p>
+    <div class="card">
+      <label class="fld" for="q14">Query</label>
+      <input type="text" id="q14" value="running shoes" />
+      <div id="q14filters" style="margin-top:14px"></div>
+      <div class="row" style="margin-top:8px">
+        <div><h3>Results <span style="text-transform:none;letter-spacing:0;font-weight:400">· score unaffected by filters</span></h3><div id="q14results"></div></div>
+        <div><h3>Facets <span style="text-transform:none;letter-spacing:0;font-weight:400">· counts over doc-values</span></h3><div id="q14facets"></div></div>
+      </div>
+      <div class="note" id="q14note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 15 -->
+  <section class="phase" data-tab="15 · Boolean + WAND">
+    <h2>Phase 15 — Boolean ops + Block-Max WAND</h2>
+    <p class="lede">AND intersects, OR unions, NOT subtracts posting lists. But scoring <em>every</em> match is fatal for a
+      broad OR query — <strong>WAND</strong> skips any doc whose best-possible score can't crack the top-K, so retrieval
+      and ranking interleave instead of running in sequence.</p>
+    <div class="card">
+      <label class="fld" for="q15">Query</label>
+      <input type="text" id="q15" value="running shoes red" />
+      <div class="row" style="margin-top:12px">
+        <div><h3>AND <span style="text-transform:none;letter-spacing:0;font-weight:400">· all terms</span></h3><div id="q15and"></div></div>
+        <div><h3>OR <span style="text-transform:none;letter-spacing:0;font-weight:400">· any term</span></h3><div id="q15or"></div></div>
+        <div><h3>NOT <span style="text-transform:none;letter-spacing:0;font-weight:400">· 1st term minus rest</span></h3><div id="q15not"></div></div>
+      </div>
+      <h3 style="margin-top:18px">Top-K by score — naive vs WAND</h3>
+      <div class="slider-row"><label>K</label><input type="range" id="wandK" min="1" max="6" step="1" value="3"><output id="wandKout">3</output></div>
+      <div id="q15wand"></div>
+      <div class="note" id="q15note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 16 -->
+  <section class="phase" data-tab="16 · Reindex &amp; Aliases">
+    <h2>Phase 16 — Zero-downtime reindex with aliases</h2>
+    <p class="lede">Mappings and shard count are immutable, so to change them you build a <em>new</em> index and
+      <strong>atomically swap an alias</strong> — blue-green for search. The app always queries the alias, never the
+      physical index, so the cutover is instant and reversible.</p>
+    <div class="card">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px">
+        <button class="act" id="rxCreate">Create v2 · 4 shards</button>
+        <button class="act" id="rxBackfill">Backfill v1 → v2</button>
+        <button class="act" id="rxSwap">Swap alias</button>
+        <button class="act ghost" id="rxRollback">Rollback</button>
+        <button class="act ghost" id="rxReset">Reset</button>
+      </div>
+      <div id="rxState"></div>
+      <h3 style="margin-top:16px">Routing <span style="text-transform:none;letter-spacing:0;font-weight:400">· hash(id) % shards</span></h3>
+      <div id="rxRouting"></div>
+      <div class="note" id="rxNote"></div>
+    </div>
+  </section>
+
     <div class="footer">Faithful browser port of the <code>src/phase*</code> scripts · same analyzer, BM25, re-ranker &amp; prefix table · MIT</div>
     </div><!-- /main-inner -->
   </main>
@@ -649,6 +741,8 @@ const TIER_OF = {
   '9-vector-semantic': 'Relevance & ranking', '10-hybrid-rrf': 'Relevance & ranking',
   '11-learning-to-rank': 'Relevance & ranking', '12-evaluation': 'Relevance & ranking',
   '5-scatter-gather': 'Systems & scale', '6-typeahead': 'Systems & scale',
+  '13-segments-freshness': 'Systems & scale', '14-facets-filters': 'Systems & scale',
+  '15-boolean-wand': 'Systems & scale', '16-reindex-aliases': 'Systems & scale',
 };
 navEl.setAttribute('role', 'tablist');
 navEl.setAttribute('aria-orientation', 'vertical');
@@ -1280,6 +1374,177 @@ document.getElementById('evalB').addEventListener('click', e => {
   else if (dn !== undefined) { const i = +dn; [EVAL_B[i+1], EVAL_B[i]] = [EVAL_B[i], EVAL_B[i+1]]; renderEval(); }
 });
 evalKEl.addEventListener('input', renderEval); renderEval();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 13 — segments, refresh & search lag
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  const SEED = [{ id: 1, text: 'widget alpha' }, { id: 2, text: 'widget beta' }];
+  let buffer, segments, tombstones, nextId, segCounter, ver;
+  function reset() {
+    buffer = []; tombstones = 0; nextId = 3; segCounter = 1; ver = {};
+    segments = [{ seg: 1, docs: SEED.map(d => ({ ...d, deleted: false })) }];
+    render('Write a doc, then notice search doesn’t see it until you Refresh.');
+  }
+  const live = () => { const m = new Map(); for (const s of segments) for (const d of s.docs) if (!d.deleted) m.set(d.id, d); return [...m.values()].sort((a, b) => a.id - b.id); };
+  const search = term => live().filter(d => d.text.includes(term)).map(d => d.id);
+  const getById = id => { const b = buffer.find(d => d.id === id); if (b) return b.text + '  (buffer · real-time)'; const s = live().find(d => d.id === id); return s ? s.text + '  (segment)' : null; };
+  function render(note) {
+    document.getElementById('segBuffer').innerHTML = buffer.length
+      ? buffer.map(d => `<span class="chip">doc ${d.id}</span>`).join(' ') : '<span class="ta-empty">(empty)</span>';
+    document.getElementById('segSegments').innerHTML = segments.map(s =>
+      `<div class="brk" style="margin:4px 0"><b>segment ${s.seg}</b> · ${s.docs.map(d => d.deleted
+        ? `<span style="text-decoration:line-through;color:var(--muted)">doc ${d.id}</span>` : `doc ${d.id}`).join(', ')}</div>`).join('');
+    document.getElementById('segSearch').innerHTML = `<div class="brk">found [${search('widget').join(', ') || '—'}] <span class="dim2">· ${tombstones} tombstone(s), ${buffer.length} unrefreshed</span></div>`;
+    const lastId = nextId - 1;
+    document.getElementById('segGet').innerHTML = `<div class="brk">getById(${lastId}) → ${getById(lastId) || '<span class="term-out">not found</span>'}</div>`;
+    document.getElementById('segNote').innerHTML = note;
+  }
+  document.getElementById('segWrite').onclick = () => {
+    const id = nextId++; ver[id] = 1; buffer.push({ id, text: `widget item-${id}` });
+    render(`Wrote doc ${id}: durable in the translog but <strong>not searchable</strong> — search still shows the old set. getById(${id}) already works (real-time). Hit <strong>Refresh</strong>.`);
+  };
+  document.getElementById('segRefresh').onclick = () => {
+    if (!buffer.length) return render('Nothing buffered to refresh.');
+    segments.push({ seg: ++segCounter, docs: buffer.map(d => ({ ...d, deleted: false })) });
+    const n = buffer.length; buffer = [];
+    render(`Refresh → sealed a new immutable segment with ${n} doc(s). They’re searchable now (this is the ~1s refresh interval).`);
+  };
+  document.getElementById('segUpdate').onclick = () => {
+    const l = live(); if (!l.length) return render('No live docs to update.');
+    const id = l[0].id;
+    for (const s of segments) for (const d of s.docs) if (d.id === id && !d.deleted) { d.deleted = true; tombstones++; }
+    ver[id] = (ver[id] || 1) + 1; buffer.push({ id, text: `widget item-${id} v${ver[id]}` });
+    render(`Update doc ${id} = tombstone the old version + write a new one to the buffer. Search drops doc ${id} until you refresh; tombstones now ${tombstones}. High-churn fields do exactly this on every write — that’s why they thrash merges.`);
+  };
+  document.getElementById('segMerge').onclick = () => {
+    const purged = tombstones; segments = [{ seg: ++segCounter, docs: live().map(d => ({ ...d })) }]; tombstones = 0;
+    render(`Merge → folded everything into one segment and purged ${purged} tombstone(s). Fewer segments = faster, more predictable search (at background CPU/IO cost).`);
+  };
+  document.getElementById('segReset').onclick = reset;
+  reset();
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 14 — facets & filters (forward index / doc-values)
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  const PRODUCTS = [
+    { id: 1, text: 'red running shoes', brand: 'Nike', category: 'Shoes', price: 90, stock: true },
+    { id: 2, text: 'blue running shoes', brand: 'Adidas', category: 'Shoes', price: 120, stock: true },
+    { id: 3, text: 'trail running shoes', brand: 'Nike', category: 'Shoes', price: 140, stock: false },
+    { id: 4, text: 'running socks pack', brand: 'Nike', category: 'Socks', price: 15, stock: true },
+    { id: 5, text: 'running shorts', brand: 'Adidas', category: 'Apparel', price: 35, stock: true },
+    { id: 6, text: 'kids running shoes', brand: 'Puma', category: 'Shoes', price: 60, stock: true },
+    { id: 7, text: 'marathon racing shoes', brand: 'Adidas', category: 'Shoes', price: 160, stock: false },
+    { id: 8, text: 'casual canvas sneakers', brand: 'Puma', category: 'Shoes', price: 70, stock: true },
+  ];
+  const BRANDS = [...new Set(PRODUCTS.map(p => p.brand))];
+  const fBrand = new Set(); let fMax = 200, fStock = false;
+  const q14 = document.getElementById('q14');
+  const score = (p, qs) => analyze(p.text).filter(t => qs.has(t)).length;
+  function counts(list, key) { const m = new Map(); for (const p of list) m.set(p[key], (m.get(p[key]) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); }
+  function buildFilters() {
+    document.getElementById('q14filters').innerHTML =
+      `<div class="fld">brand</div><div class="chips" id="q14brands">${BRANDS.map(b => `<label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" data-b="${b}" style="margin-right:5px;vertical-align:-1px">${b}</label>`).join('')}</div>` +
+      `<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-top:12px">` +
+      `<span><span class="fld" style="display:inline">max price</span> <span id="q14priceval" class="num">$200</span><br><input type="range" id="q14price" min="15" max="200" step="5" value="200" style="width:180px"></span>` +
+      `<label class="toggle" style="margin-top:0"><input type="checkbox" id="q14stock"> in stock only</label></div>`;
+    document.querySelectorAll('#q14brands input').forEach(el => el.onchange = () => { el.checked ? fBrand.add(el.dataset.b) : fBrand.delete(el.dataset.b); renderResults(); });
+    const price = document.getElementById('q14price');
+    price.oninput = () => { fMax = +price.value; document.getElementById('q14priceval').textContent = '$' + fMax; renderResults(); };
+    document.getElementById('q14stock').onchange = e => { fStock = e.target.checked; renderResults(); };
+  }
+  function renderResults() {
+    const qs = new Set(analyze(q14.value));
+    const matched = PRODUCTS.filter(p => !qs.size || analyze(p.text).some(t => qs.has(t)));
+    const passFilter = p => (!fBrand.size || fBrand.has(p.brand)) && p.price <= fMax && (!fStock || p.stock);
+    const shown = matched.filter(passFilter).map(p => ({ ...p, s: score(p, qs) })).sort((a, b) => b.s - a.s || a.price - b.price);
+    document.getElementById('q14results').innerHTML = shown.length ? `<table><thead><tr><th>score</th><th>product</th><th>brand · $</th></tr></thead><tbody>${
+      shown.map(p => `<tr><td class="num">${p.s.toFixed(0)}</td><td><span class="num">#${p.id}</span> <span class="doc-text" style="font-size:12.5px">${p.text}</span></td>
+        <td class="num">${p.brand} · $${p.price}${p.stock ? '' : ' <span class="term-out">·oos</span>'}</td></tr>`).join('')}</tbody></table>` : '<div class="ta-empty">no results</div>';
+    const facetHtml = (title, pairs) => `<div style="margin-bottom:10px"><div class="fld">${title}</div>${pairs.map(([k, n]) => `<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12.5px;padding:2px 0"><span>${k}</span><span class="num">${n}</span></div>`).join('')}</div>`;
+    document.getElementById('q14facets').innerHTML = facetHtml('brand', counts(shown, 'brand')) + facetHtml('category', counts(shown, 'category'));
+    document.getElementById('q14note').innerHTML = `Filters ran as a score-free set intersection — the surviving <strong>scores are unchanged</strong>, so the filter bitset is cacheable and reused across queries. Facet counts come from the doc-values columns (brand, category), never the analyzed text.`;
+  }
+  buildFilters(); q14.addEventListener('input', renderResults); renderResults();
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 15 — boolean ops + WAND
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  const post = new Map(); // term -> Map(docId -> tf)
+  for (const d of CORPUS) for (const t of analyze(d.text)) { const m = post.get(t) || post.set(t, new Map()).get(t); m.set(d.id, (m.get(d.id) || 0) + 1); }
+  const N = CORPUS.length;
+  const idf = t => { const df = post.get(t)?.size || 0; return df ? Math.log(1 + N / df) : 0; };
+  const maxContrib = t => { let mx = 0; for (const tf of (post.get(t)?.values() || [])) mx = Math.max(mx, tf * idf(t)); return mx; };
+  const setOf = t => new Set(post.get(t)?.keys() || []);
+  const scoreDoc = (id, terms) => terms.reduce((s, t) => s + (post.get(t)?.get(id) || 0) * idf(t), 0);
+  const q15 = document.getElementById('q15'), wandK = document.getElementById('wandK');
+  const idList = arr => arr.length ? `[${arr.sort((a, b) => a - b).join(', ')}]` : '∅';
+  function render() {
+    const terms = [...new Set(analyze(q15.value))].filter(t => post.has(t));
+    const K = +wandK.value; document.getElementById('wandKout').textContent = K;
+    const sets = terms.map(setOf);
+    const AND = terms.length ? [...sets[0]].filter(id => sets.every(s => s.has(id))) : [];
+    const OR = [...new Set(terms.flatMap(t => [...setOf(t)]))];
+    const NOT = terms.length ? [...setOf(terms[0])].filter(id => !terms.slice(1).some(t => setOf(t).has(id))) : [];
+    document.getElementById('q15and').innerHTML = `<div class="brk">${idList(AND)}</div>`;
+    document.getElementById('q15or').innerHTML = `<div class="brk">${idList(OR)}</div>`;
+    document.getElementById('q15not').innerHTML = `<div class="brk">${idList(NOT)}</div>`;
+    // naive: score every doc in OR
+    const naive = OR.map(id => ({ id, s: scoreDoc(id, terms) })).sort((a, b) => b.s - a.s).slice(0, K);
+    // WAND: process by descending upper bound; skip if ub <= threshold once K found
+    const ub = id => terms.reduce((s, t) => s + (setOf(t).has(id) ? maxContrib(t) : 0), 0);
+    const cands = OR.map(id => ({ id, u: ub(id) })).sort((a, b) => b.u - a.u);
+    const heap = []; let scored = 0, threshold = -Infinity;
+    for (const c of cands) {
+      if (heap.length >= K && c.u <= threshold) continue; // skip — cannot enter top-K
+      const s = scoreDoc(c.id, terms); scored++;
+      heap.push({ id: c.id, s }); heap.sort((a, b) => b.s - a.s); if (heap.length > K) heap.pop();
+      threshold = heap.length >= K ? heap[heap.length - 1].s : -Infinity;
+    }
+    const row = (label, list, n) => `<div style="flex:1 1 240px"><div class="fld">${label} · <span class="num">${n}</span> docs scored</div><table><tbody>${
+      list.map((x, i) => `<tr><td class="rank">${i + 1}</td><td class="num">${x.s.toFixed(3)}</td><td class="num">doc ${x.id}</td></tr>`).join('')}</tbody></table></div>`;
+    document.getElementById('q15wand').innerHTML = `<div class="row">${row('Naive', naive, OR.length)}${row('WAND', heap.sort((a, b) => b.s - a.s), scored)}</div>`;
+    const saved = OR.length - scored;
+    document.getElementById('q15note').innerHTML = `Same top-${K}, but WAND scored <strong>${scored}</strong> of ${OR.length} matching docs (skipped ${saved}) — any doc whose best-possible score (its terms’ max contributions) can’t beat the K-th best is skipped unscored. On a broad OR query over millions of docs, that’s the difference between fast and falling over. Put the rarest term first.`;
+  }
+  q15.addEventListener('input', render); wandK.addEventListener('input', render); render();
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 16 — zero-downtime reindex with aliases
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  const IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+  const hash = s => [...s].reduce((h, c) => h + c.charCodeAt(0), 0);
+  const shardOf = (id, n) => hash(id) % n;
+  function makeIndex(name, shards, ids) { const buckets = Array.from({ length: shards }, () => []); for (const id of ids) buckets[shardOf(id, shards)].push(id); return { name, shards, buckets }; }
+  let v1, v2, alias, step;
+  function reset() { v1 = makeIndex('products_v1', 2, IDS); v2 = null; alias = 'v1'; step = 0; render('The app queries the alias <code>products</code> — never the physical index. That indirection is the whole trick. Now we need 2 → 4 shards (immutable), so build v2.'); }
+  const target = () => alias === 'v1' ? v1 : v2;
+  function idxHtml(idx, isAlias) {
+    if (!idx) return '<div class="ta-empty">— not created —</div>';
+    return `<div class="brk" style="${isAlias ? 'border-color:var(--accent)' : ''}"><b>${idx.name}</b> · ${idx.shards} shards${isAlias ? ' <span style="color:var(--accent)">← alias “products”</span>' : ''}
+      ${idx.buckets.map((b, i) => `<div>shard ${i}: [${b.join(', ')}]</div>`).join('')}</div>`;
+  }
+  function render(note) {
+    document.getElementById('rxState').innerHTML =
+      `<div class="row"><div>${idxHtml(v1, alias === 'v1')}</div><div>${idxHtml(v2, alias === 'v2')}</div></div>` +
+      `<div class="brk" style="margin-top:8px">query <code>products</code> → <b>${target().name}</b> · ${target().buckets.reduce((n, b) => n + b.length, 0)} docs <span class="term-in">✓ served</span></div>`;
+    document.getElementById('rxRouting').innerHTML = `<table><thead><tr><th>id</th><th>hash</th><th>shard @ N=2</th><th>shard @ N=4</th></tr></thead><tbody>${
+      IDS.slice(0, 5).map(id => `<tr><td class="num">${id}</td><td class="num">${hash(id)}</td><td class="num">${shardOf(id, 2)}</td><td class="num" style="color:${shardOf(id, 2) !== shardOf(id, 4) ? 'var(--accent)' : 'inherit'}">${shardOf(id, 4)}</td></tr>`).join('')}</tbody></table>`;
+    document.getElementById('rxNote').innerHTML = note;
+  }
+  document.getElementById('rxCreate').onclick = () => { if (v2) return; v2 = makeIndex('products_v2', 4, []); render('Created <b>products_v2</b> with 4 shards — empty. The app is still served entirely by v1: zero disruption. Now <strong>backfill</strong>.'); };
+  document.getElementById('rxBackfill').onclick = () => { if (!v2) return render('Create v2 first.'); v2 = makeIndex('products_v2', 4, IDS); render('Backfilled every doc into v2 by re-routing on <code>hash(id) % 4</code> (cleanest is replaying the change-log). Counts match: v1=8, v2=8. Validate, then <strong>swap</strong>.'); };
+  document.getElementById('rxSwap').onclick = () => { if (!v2 || v2.buckets.every(b => !b.length)) return render('Backfill v2 before swapping.'); alias = 'v2'; render('<strong>Atomic swap:</strong> the alias now points at v2 in a single action — no query saw a gap, nothing was drained. If relevance regresses, <strong>Rollback</strong> is one flip away.'); };
+  document.getElementById('rxRollback').onclick = () => { if (!v2) return; alias = 'v1'; render('Flipped the alias back to v1 — instant, reversible. This is blue-green for search indexes.'); };
+  document.getElementById('rxReset').onclick = reset;
+  reset();
+})();
 </script>
 </body>
 </html>

@@ -17,6 +17,10 @@
     "phase10": "node src/phase10/hybrid-rrf.ts",
     "phase11": "node src/phase11/learning-to-rank.ts",
     "phase12": "node src/phase12/evaluation-metrics.ts",
+    "phase13": "node src/phase13/segments-freshness.ts",
+    "phase14": "node src/phase14/facets-filters.ts",
+    "phase15": "node src/phase15/boolean-wand.ts",
+    "phase16": "node src/phase16/reindex-aliases.ts",
     "web": "node web/serve.mjs",
     "deploy": "npx wrangler pages deploy web --project-name search-and-ranking",
     "typecheck": "tsc --noEmit"
