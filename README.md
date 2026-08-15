@@ -8,6 +8,8 @@ Every phase is a small script you can run and read — **and** an interactive pa
 web app (`npm run web`). No build step: modern Node runs the TypeScript directly. No
 external services.
 
+![The Search Systems interactive lab — sidebar of lessons and the index-time/query-time overview](docs/overview.jpg)
+
 > Built to match a Staff-level study path. The through-line: search **inverts the
 > work** — do the expensive part at INDEX time so query time is cheap. Every
 > search question is four decisions: **analysis** (tokens/stemming),
@@ -63,6 +65,9 @@ page that ports the **same** analyzer, BM25, re-ranker, and prefix table into th
 browser. It opens on an **Overview** page (the index-time → query-time through-line),
 with a left **sidebar** that groups every lesson by tier — each panel is one of the
 phases above, made interactive:
+
+![The BM25 panel — TF-IDF vs BM25 side by side, with k1/b sliders and matched terms highlighted](docs/bm25.jpg)
+
 
 - **Analyzer** — type text, watch tokens get lowercased, stopword-dropped, stemmed
 - **Inverted index** — live boolean AND with posting lists and highlighted terms; flip **"break it"** to analyze the query differently from the index and watch matches collapse to zero — the #1 real-world search bug, live
