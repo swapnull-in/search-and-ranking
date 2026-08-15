@@ -150,6 +150,32 @@
   .two-terms .side { color: var(--muted); }
   .two-terms .side b { color: var(--ink); font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+  .tab-tier { display: inline-flex; align-items: center; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--muted); opacity: .7; padding: 0 4px 0 10px; margin-left: 2px;
+    border-left: 1px solid var(--line); align-self: center; }
+  .tab-tier:first-child { border-left: none; padding-left: 0; margin-left: 0; }
+  .concept-bars { display: flex; gap: 3px; align-items: flex-end; height: 26px; margin-top: 4px; }
+  .concept-bars .cb { width: 9px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: .85; }
+  .concept-bars .cb.zero { background: var(--line); }
+  .wbar-row { display: grid; grid-template-columns: 92px 1fr 54px; align-items: center; gap: 10px; margin: 6px 0; font-family: var(--mono); font-size: 12.5px; }
+  .wbar { height: 14px; background: var(--accent-soft); border-radius: 4px; overflow: hidden; }
+  .wbar > span { display: block; height: 100%; background: var(--accent); transition: width .25s; }
+  .wbar.hand > span { background: var(--muted); }
+  .feat-tbl td, .feat-tbl th { font-family: var(--mono); font-size: 12px; padding: 6px 8px; }
+  .lbl-pill { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+  .lbl-pill.g0 { background: var(--line); color: var(--muted); }
+  .arrows { display: inline-flex; flex-direction: column; gap: 1px; margin-right: 8px; vertical-align: middle; }
+  .arrows button { font-family: var(--mono); font-size: 9px; line-height: 1; padding: 2px 5px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--muted); border-radius: 4px; cursor: pointer; }
+  .arrows button:hover { color: var(--accent); border-color: var(--accent); }
+  .arrows button:disabled { opacity: .3; cursor: default; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-top: 6px; }
+  .mcell { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg); }
+  .mcell .mv { font-family: var(--mono); font-size: 17px; }
+  .mcell .ml { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .mcell.win .mv { color: var(--good); }
+  .eqbadge { font-size: 11px; color: var(--warn); font-family: var(--mono); }
+  .term-in { color: var(--good); } .term-out { color: var(--bad); }
 </style>
 </head>
 <body>
@@ -281,6 +307,129 @@
     </div>
   </section>
 
+  <!-- PHASE 7 -->
+  <section class="phase" data-tab="7 · Phrase &amp; Position">
+    <h2>Phase 7 — Phrase &amp; positional queries</h2>
+    <p class="lede">Boolean AND finds docs with the words <em>anywhere</em>. A <strong>phrase</strong> query needs them
+      <em>adjacent, in order</em> — only possible because the index also stored each term's <strong>positions</strong>.
+      It's why <code>"new york"</code> must not match a doc that says "york, new".</p>
+    <div class="card">
+      <label class="fld" for="q7">Query</label>
+      <input type="text" id="q7" value="running shoes" />
+      <div class="slider-row" style="margin-top:14px"><label>proximity slop</label>
+        <input type="range" id="slop" min="0" max="4" step="1" value="0"><output id="slopout">0</output></div>
+      <div class="row" style="margin-top:8px">
+        <div><h3>Boolean AND — anywhere</h3><div id="q7bool"></div></div>
+        <div><h3 id="q7phraseH">Phrase — adjacent</h3><div id="q7phrase"></div></div>
+      </div>
+      <h3 style="margin-top:16px">Positions (index of each term inside the doc)</h3>
+      <div class="postings" id="q7pos"></div>
+      <div class="note" id="q7note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 8 -->
+  <section class="phase" data-tab="8 · Fuzzy &amp; Spelling">
+    <h2>Phase 8 — Fuzzy matching &amp; spelling correction</h2>
+    <p class="lede">A search box that returns nothing for <code>resturant</code> is failing at the <strong>vocabulary
+      boundary</strong>, not at ranking. Typo tolerance is query-side repair: find the real index term within a small
+      <strong>edit distance</strong>, correct the query, <em>then</em> search.</p>
+    <div class="card">
+      <label class="fld" for="q8">Query (try a typo)</label>
+      <input type="text" id="q8" value="runing shoez" />
+      <div class="slider-row" style="margin-top:14px"><label>max edit distance</label>
+        <input type="range" id="maxDist" min="1" max="3" step="1" value="2"><output id="maxDistout">2</output></div>
+      <div id="q8out" style="margin-top:6px"></div>
+      <div id="q8did"></div>
+      <h3 style="margin-top:16px">Results after correct → analyze → search</h3>
+      <div id="q8results"></div>
+      <div class="note">Edit distance is the centerpiece: <code>levenshtein("shoez","shoes") = 1</code>. Brute-forcing it
+        over a whole vocabulary is O(vocab × len²) — at scale you prefilter with trigram indexes, BK-trees, SymSpell, or
+        Levenshtein automata.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 9 -->
+  <section class="phase" data-tab="9 · Vector / Semantic">
+    <h2>Phase 9 — Vector / semantic search</h2>
+    <p class="lede">Lexical search matches <em>characters</em>; it's blind to meaning — <code>sneakers</code> never
+      matches <code>shoes</code>. Semantic search embeds docs and the query into vectors and ranks by
+      <strong>cosine similarity</strong>, so meaning matches even when words don't.</p>
+    <div class="card">
+      <label class="fld" for="q9">Query</label>
+      <input type="text" id="q9" value="sneakers for kids" />
+      <div class="chips" id="q9concepts" style="margin-top:10px"></div>
+      <h3 style="margin-top:16px">Semantic ranking (cosine) <span style="text-transform:none;letter-spacing:0;font-weight:400">· vs. raw lexical overlap</span></h3>
+      <div id="q9result"></div>
+      <div class="note" id="q9note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 10 -->
+  <section class="phase" data-tab="10 · Hybrid + RRF">
+    <h2>Phase 10 — Hybrid search + Reciprocal Rank Fusion</h2>
+    <p class="lede">Lexical and semantic retrieval each miss what the other catches. Run both, then fuse with
+      <strong>RRF</strong>: <code>score(d) = Σ 1/(k + rank)</code>. It uses only <em>ranks</em>, so BM25 and cosine
+      scores never have to be normalized onto the same scale.</p>
+    <div class="card">
+      <label class="fld" for="q10">Query</label>
+      <input type="text" id="q10" value="comfortable sneakers" />
+      <div class="slider-row" style="margin-top:14px"><label>RRF constant k</label>
+        <input type="range" id="rrfk" min="1" max="60" step="1" value="60"><output id="rrfkout">60</output></div>
+      <div class="row" style="margin-top:8px">
+        <div><h3>BM25 (lexical)</h3><div id="q10bm25"></div></div>
+        <div><h3>Cosine (semantic)</h3><div id="q10sem"></div></div>
+        <div><h3>RRF (fused)</h3><div id="q10rrf"></div></div>
+      </div>
+      <div class="note" id="q10note"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 11 -->
+  <section class="phase" data-tab="11 · Learning to Rank">
+    <h2>Phase 11 — Learning to Rank</h2>
+    <p class="lede">Phase 4 <em>guessed</em> the re-rank weights. LTR <strong>learns</strong> them from judgments.
+      The pairwise trick: turn "doc A should beat doc B" into a training pair and nudge a weight vector until
+      <code>w·features(A) &gt; w·features(B)</code> for every pair.</p>
+    <div class="card">
+      <h3>Query "running shoes" — features &amp; human labels</h3>
+      <div id="ltrFeatures"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px">
+        <button class="act" id="ltrTrain">Train (pairwise gradient descent)</button>
+        <button class="act ghost" id="ltrReset">Reset</button>
+        <span id="ltrStatus" style="font-family:var(--mono); font-size:12.5px; color:var(--muted)"></span>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div>
+          <h3>Weights: learned vs hand-tuned</h3>
+          <div id="ltrWeights"></div>
+        </div>
+        <div>
+          <h3>Ranking by the learned model</h3>
+          <div id="ltrRanking"></div>
+        </div>
+      </div>
+      <div class="note" id="ltrNote">Features in, judgments as the target — the data sets the weights an engineer used
+        to guess. Production uses LambdaMART / gradient-boosted trees over hundreds of features; this is the linear core.</div>
+    </div>
+  </section>
+
+  <!-- PHASE 12 -->
+  <section class="phase" data-tab="12 · Evaluation">
+    <h2>Phase 12 — Offline evaluation metrics</h2>
+    <p class="lede">How do you compare two rankers without shipping? Graded judgments + metrics. The lesson:
+      <strong>Precision@k can be identical</strong> for two orderings while <strong>NDCG</strong> — position- and
+      grade-aware — cleanly separates them. Reorder Ranking B and watch.</p>
+    <div class="card">
+      <div class="slider-row"><label>k (cutoff)</label><input type="range" id="evalK" min="1" max="5" step="1" value="3"><output id="evalKout">3</output></div>
+      <div class="row" style="margin-top:8px">
+        <div><h3>Ranking A (fixed, ideal-ish)</h3><div id="evalA"></div></div>
+        <div><h3>Ranking B (reorder me ↑↓)</h3><div id="evalB"></div></div>
+      </div>
+      <div class="note" id="evalNote"></div>
+    </div>
+  </section>
+
   <!-- PHASE 5 -->
   <section class="phase" data-tab="5 · Scatter-Gather">
     <h2>Phase 5 — Scatter-gather &amp; tail latency</h2>
@@ -363,11 +512,28 @@ const docById = id => CORPUS.find(d => d.id === id) || DOCS.find(d => d.id === i
    ───────────────────────────────────────────────────────────────────────── */
 const sections = [...document.querySelectorAll('section.phase')];
 const tabsEl = document.getElementById('tabs');
+const tabButtons = [];
 const slug = s => s.dataset.tab.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Beginner → staff tiers, keyed by tab slug (DOM order is grouped to match). */
+const TIER_OF = {
+  'analyzer': 'Foundations', '1-inverted-index': 'Foundations', '2-tf-idf': 'Foundations',
+  '3-bm25': 'Ranking', '4-retrieve-rank': 'Ranking',
+  '7-phrase-position': 'Relevance & ranking', '8-fuzzy-spelling': 'Relevance & ranking',
+  '9-vector-semantic': 'Relevance & ranking', '10-hybrid-rrf': 'Relevance & ranking',
+  '11-learning-to-rank': 'Relevance & ranking', '12-evaluation': 'Relevance & ranking',
+  '5-scatter-gather': 'Systems & scale', '6-typeahead': 'Systems & scale',
+};
 tabsEl.setAttribute('role', 'tablist');
+let lastTier = null;
 sections.forEach((sec, i) => {
   const id = slug(sec);
+  const tier = TIER_OF[id] || '';
+  if (tier !== lastTier) {
+    const d = document.createElement('span');
+    d.className = 'tab-tier'; d.textContent = tier; d.setAttribute('aria-hidden', 'true');
+    tabsEl.appendChild(d); lastTier = tier;
+  }
   sec.id = 'panel-' + id; sec.setAttribute('role', 'tabpanel'); sec.setAttribute('aria-labelledby', 'tab-' + id);
   const b = document.createElement('button');
   b.textContent = sec.dataset.tab; b.id = 'tab-' + id;
@@ -377,13 +543,13 @@ sections.forEach((sec, i) => {
     const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : e.key === 'Home' ? 'first' : e.key === 'End' ? 'last' : 0;
     if (!d) return; e.preventDefault();
     const n = d === 'first' ? 0 : d === 'last' ? sections.length - 1 : (i + d + sections.length) % sections.length;
-    activate(n, true); tabsEl.children[n].focus();
+    activate(n, true); tabButtons[n].focus();
   };
-  tabsEl.appendChild(b);
+  tabButtons.push(b); tabsEl.appendChild(b);
 });
 function activate(i, push) {
   sections.forEach((s, j) => s.classList.toggle('active', i === j));
-  [...tabsEl.children].forEach((b, j) => {
+  tabButtons.forEach((b, j) => {
     const on = i === j;
     b.classList.toggle('active', on);
     b.setAttribute('aria-selected', String(on));
@@ -718,6 +884,266 @@ function renderTypeahead() {
   taList.querySelectorAll('.ta-item').forEach(el => el.onclick = () => { ta.value = el.dataset.q; renderTypeahead(); });
 }
 ta.addEventListener('input', renderTypeahead);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 7 — phrase & positional queries
+   ───────────────────────────────────────────────────────────────────────── */
+const POS = new Map(); // term → Map(docId → positions[])
+for (const doc of CORPUS) analyze(doc.text).forEach((t, i) => {
+  const m = POS.get(t) || POS.set(t, new Map()).get(t);
+  (m.get(doc.id) || m.set(doc.id, []).get(doc.id)).push(i);
+});
+/** Do the terms occur in order, each after the previous, within (n-1)+slop positions? */
+function orderedWithin(lists, slop) {
+  if (lists.length === 1) return lists[0].length > 0;
+  const span = (lists.length - 1) + slop;
+  const rec = (i, prev, first) => {
+    if (i === lists.length) return true;
+    for (const p of lists[i]) if (p > prev && (p - first) <= span && rec(i + 1, p, first)) return true;
+    return false;
+  };
+  return lists[0].some(start => rec(1, start, start));
+}
+const q7 = document.getElementById('q7'), slopEl = document.getElementById('slop');
+function renderP7() {
+  const slop = +slopEl.value; document.getElementById('slopout').textContent = slop;
+  document.getElementById('q7phraseH').textContent = slop ? `Phrase — within slop ${slop}` : 'Phrase — adjacent';
+  const terms = analyze(q7.value);
+  const boolDocs = terms.length ? CORPUS.map(d => d.id).filter(id => terms.every(t => POS.get(t)?.has(id))) : [];
+  const phraseDocs = boolDocs.filter(id => orderedWithin(terms.map(t => POS.get(t).get(id)), slop));
+  const list = arr => arr.length
+    ? `<table><tbody>${arr.map(id => `<tr><td class="num">doc ${id}</td><td class="doc-text" style="font-size:12.5px">${hlDoc(docById(id).text, terms)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="ta-empty">none</div>';
+  document.getElementById('q7bool').innerHTML = list(boolDocs);
+  document.getElementById('q7phrase').innerHTML = list(phraseDocs);
+  document.getElementById('q7pos').innerHTML = boolDocs.map(id =>
+    `<div><span class="term">doc ${id}</span>${terms.map(t => `${t}@[${POS.get(t).get(id).join(',')}]`).join('  ')}  ${
+      phraseDocs.includes(id) ? '<span style="color:var(--good)">✓ phrase</span>' : '<span style="color:var(--bad)">✗ not adjacent</span>'}</div>`
+  ).join('') || '<span class="ta-empty">—</span>';
+  const dropped = boolDocs.filter(id => !phraseDocs.includes(id));
+  document.getElementById('q7note').innerHTML = terms.length < 2
+    ? 'Enter at least two words to see the phrase constraint bite.'
+    : `Boolean AND matches <code>[${boolDocs.join(',')}]</code>; phrase matches <code>[${phraseDocs.join(',')}]</code>.` +
+      (dropped.length ? ` Doc ${dropped[0]} has both words but not adjacent (see its positions) — raise slop to let it back in.` : ' Every AND match is also a phrase match at this slop.');
+}
+q7.addEventListener('input', renderP7); slopEl.addEventListener('input', renderP7); renderP7();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 8 — fuzzy matching & spelling correction
+   ───────────────────────────────────────────────────────────────────────── */
+const RAWVOCAB = new Map(); // raw (unstemmed) token → frequency
+for (const doc of CORPUS) for (const t of doc.text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean))
+  RAWVOCAB.set(t, (RAWVOCAB.get(t) || 0) + 1);
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return dp[m][n];
+}
+function fuzzyCandidates(tok, maxDist) {
+  return [...RAWVOCAB.entries()].map(([w, f]) => ({ w, f, d: levenshtein(tok, w) }))
+    .filter(c => c.d <= maxDist).sort((a, b) => a.d - b.d || b.f - a.f);
+}
+const q8 = document.getElementById('q8'), maxDistEl = document.getElementById('maxDist');
+function renderP8() {
+  const maxDist = +maxDistEl.value; document.getElementById('maxDistout').textContent = maxDist;
+  const raw = q8.value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const corrected = [];
+  const chips = raw.map(tok => {
+    if (RAWVOCAB.has(tok)) { corrected.push(tok); return `<span class="chip"><span class="term-in">✓</span> ${tok}</span>`; }
+    const cands = fuzzyCandidates(tok, maxDist);
+    if (!cands.length) { corrected.push(tok); return `<span class="chip dim">${tok} (no match ≤${maxDist})</span>`; }
+    corrected.push(cands[0].w);
+    return `<span class="chip"><span class="term-out">${tok}</span> → <b>${cands[0].w}</b> <span style="opacity:.6">d${cands[0].d}</span></span>`;
+  });
+  document.getElementById('q8out').innerHTML = `<div class="chips">${chips.join('') || '<span class="ta-empty">—</span>'}</div>`;
+  const correctedStr = corrected.join(' ');
+  document.getElementById('q8did').innerHTML = correctedStr !== raw.join(' ')
+    ? `<div class="warn-box" style="border-color:var(--accent);background:linear-gradient(90deg,var(--accent-soft),transparent)"><strong>Did you mean:</strong> ${correctedStr} <span style="color:var(--muted)">→ analyze → [${analyze(correctedStr).join(', ')}]</span></div>` : '';
+  const terms = analyze(correctedStr);
+  const lists = terms.map(t => new Set(INDEX.get(t) || []));
+  const res = lists.length ? [...lists[0]].filter(id => lists.every(s => s.has(id))).sort((a, b) => a - b) : [];
+  document.getElementById('q8results').innerHTML = res.length
+    ? `<table><tbody>${res.map(id => `<tr><td class="num">doc ${id}</td><td class="doc-text" style="font-size:12.5px">${hlDoc(docById(id).text, terms)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="ta-empty">no matches</div>';
+}
+q8.addEventListener('input', renderP8); maxDistEl.addEventListener('input', renderP8); renderP8();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 9 — vector / semantic search (shared toy embedding for 9 & 10)
+   ───────────────────────────────────────────────────────────────────────── */
+const CONCEPTS = {
+  footwear: ["shoe","sneaker","boot","trainer","oxford","canvas","high","top"],
+  running:  ["run","marathon","trail","ultra","approach","jog"],
+  formal:   ["dress","formal","leather","classic","oxford"],
+  kids:     ["kid","playground","durable"], color: ["red","blue"],
+  accessory:["sock","vest","hydration","bladder","moistur","wick"],
+  outdoor:  ["waterproof","rugged","hik","trail"], people: ["men","women","unisex"],
+};
+const AXES = Object.keys(CONCEPTS);
+const TERM2C = new Map();
+AXES.forEach(c => CONCEPTS[c].forEach(t => (TERM2C.get(t) || TERM2C.set(t, []).get(t)).push(c)));
+function embed(text) {
+  const v = new Array(AXES.length).fill(0);
+  for (const t of analyze(text)) { const cs = TERM2C.get(t); if (cs) for (const c of cs) v[AXES.indexOf(c)]++; }
+  const norm = Math.hypot(...v) || 1; return v.map(x => x / norm);
+}
+const cosine = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+const DOCVEC = new Map(CORPUS.map(d => [d.id, embed(d.text)]));
+const lexOverlap = (query, id) => { const q = new Set(analyze(query)); return analyze(docById(id).text).filter(t => q.has(t)).length; };
+const q9 = document.getElementById('q9');
+function renderP9() {
+  const qv = embed(q9.value);
+  const active = analyze(q9.value).flatMap(t => TERM2C.get(t) || []);
+  document.getElementById('q9concepts').innerHTML = AXES.map(a => `<span class="chip ${active.includes(a) ? '' : 'dim'}">${a}</span>`).join('');
+  const ranked = CORPUS.map(d => ({ id: d.id, c: cosine(qv, DOCVEC.get(d.id)), lex: lexOverlap(q9.value, d.id) })).sort((a, b) => b.c - a.c);
+  const max = ranked[0]?.c || 1;
+  document.getElementById('q9result').innerHTML = `<table><thead><tr><th>cosine</th><th>lex</th><th>doc</th></tr></thead><tbody>${
+    ranked.map(r => `<tr>
+      <td class="num">${r.c.toFixed(3)}<div class="bar" style="width:${Math.max(2,(r.c/max)*100)}%"></div></td>
+      <td class="num" style="color:${r.lex ? 'var(--ink)' : 'var(--muted)'}">${r.lex}</td>
+      <td><span class="num">doc ${r.id}</span><div class="doc-text" style="font-size:12.5px">${docById(r.id).text.slice(0,46)}</div></td>
+    </tr>`).join('')}</tbody></table>`;
+  const top = ranked[0];
+  document.getElementById('q9note').innerHTML = top && top.c > 0
+    ? `Doc ${top.id} tops the semantic ranking (cosine ${top.c.toFixed(3)}) with lexical overlap just <strong>${top.lex}</strong> — the embedding matched <em>meaning</em>, not words. The <span style="color:var(--muted)">lex</span> column is how much pure keyword search would have found. At billions of docs you'd use ANN (HNSW / IVF) instead of scoring every vector.`
+    : 'No concept terms recognized — try sneakers, trainers, kids, waterproof, or formal.';
+}
+q9.addEventListener('input', renderP9); renderP9();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 10 — hybrid search + reciprocal rank fusion
+   ───────────────────────────────────────────────────────────────────────── */
+const q10 = document.getElementById('q10'), rrfkEl = document.getElementById('rrfk');
+const semRank = query => CORPUS.map(d => ({ id: d.id, c: cosine(embed(query), DOCVEC.get(d.id)) }))
+  .filter(x => x.c > 0).sort((a, b) => b.c - a.c).map(x => x.id);
+function renderP10() {
+  const k = +rrfkEl.value; document.getElementById('rrfkout').textContent = k;
+  const bm = bm25Retrieve(q10.value, CORPUS).map(x => x.id);
+  const sem = semRank(q10.value);
+  const rrf = new Map();
+  [bm, sem].forEach(list => list.forEach((id, i) => rrf.set(id, (rrf.get(id) || 0) + 1 / (k + i + 1))));
+  const fused = [...rrf.entries()].sort((a, b) => b[1] - a[1]);
+  const ol = arr => arr.length ? `<ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.9">${arr.slice(0,6).map(id => `<li><span class="num">doc ${id}</span></li>`).join('')}</ol>` : '<div class="ta-empty">none</div>';
+  document.getElementById('q10bm25').innerHTML = ol(bm);
+  document.getElementById('q10sem').innerHTML = ol(sem);
+  document.getElementById('q10rrf').innerHTML = fused.length
+    ? `<ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.9">${fused.slice(0,6).map(([id, s]) => `<li><span class="num">doc ${id}</span> <span style="color:var(--muted)">${s.toFixed(4)}</span></li>`).join('')}</ol>` : '<div class="ta-empty">none</div>';
+  if (fused.length) {
+    const [id, s] = fused[0]; const rb = bm.indexOf(id), rs = sem.indexOf(id); const parts = [];
+    if (rb >= 0) parts.push(`1/(${k}+${rb+1})`); if (rs >= 0) parts.push(`1/(${k}+${rs+1})`);
+    document.getElementById('q10note').innerHTML =
+      `Fused winner <strong>doc ${id}</strong> = ${parts.join(' + ')} = <strong>${s.toFixed(4)}</strong> — BM25 rank ${rb<0?'—':rb+1}, semantic rank ${rs<0?'—':rs+1}. ` +
+      `A doc that's strong in one list, or steady across both, can beat a doc that spikes in just one. RRF used only ranks — no score normalization needed.`;
+  } else document.getElementById('q10note').textContent = 'No results — try "comfortable sneakers" or "red running boots".';
+}
+q10.addEventListener('input', renderP10); rrfkEl.addEventListener('input', renderP10); renderP10();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 11 — learning to rank (pairwise margin perceptron)
+   ───────────────────────────────────────────────────────────────────────── */
+const LTR_QUERY = "running shoes";
+const _ltrBm = new Map(bm25Retrieve(LTR_QUERY, CORPUS).map(x => [x.id, x.score]));
+const _ltrBmMax = Math.max(..._ltrBm.values());
+const LTR_CANDS = bm25Retrieve(LTR_QUERY, CORPUS).slice(0, 6).map(x => x.id);
+const LTR_LABELS = { 6: 3, 2: 3, 1: 2, 3: 1, 8: 1, 7: 0, 4: 0, 5: 0 }; // human graded relevance
+const FEAT_NAMES = ['bm25', 'popularity', 'recency', 'exact'];
+const HAND_W = [0.40, 0.35, 0.15, 0.10];
+function ltrFeatures(id) {
+  return [(_ltrBm.get(id) || 0) / _ltrBmMax, POPULARITY[id] ?? 0, 1 / (1 + (DAYS_OLD[id] ?? 365) / 30),
+    docById(id).text.toLowerCase().includes(LTR_QUERY) ? 1 : 0];
+}
+const dot = (w, x) => w.reduce((s, wi, i) => s + wi * x[i], 0);
+const PAIRS = [];
+for (const i of LTR_CANDS) for (const j of LTR_CANDS)
+  if ((LTR_LABELS[i] || 0) > (LTR_LABELS[j] || 0)) PAIRS.push([ltrFeatures(i), ltrFeatures(j)]);
+const LTR_INIT = [0.85, 0.05, 0.05, 0.05]; // a naive "just trust BM25" prior — starts mis-ranked
+let ltrW = [...LTR_INIT], ltrEpoch = 0, ltrTimer = null;
+const ltrCorrect = () => PAIRS.filter(([xi, xj]) => dot(ltrW, xi) > dot(ltrW, xj)).length;
+function ltrStep() { // margin forces the cleanly-separable set to actually move the weights
+  const lr = 0.1, margin = 0.4; let updates = 0;
+  for (const [xi, xj] of PAIRS) if (dot(ltrW, xi) <= dot(ltrW, xj) + margin) { ltrW = ltrW.map((w, k) => w + lr * (xi[k] - xj[k])); updates++; }
+  ltrEpoch++; return updates;
+}
+function renderLtrFeatures() {
+  document.getElementById('ltrFeatures').innerHTML = `<table class="feat-tbl"><thead><tr><th>doc</th>${FEAT_NAMES.map(n => `<th>${n}</th>`).join('')}<th>label</th></tr></thead><tbody>${
+    LTR_CANDS.map(id => { const f = ltrFeatures(id), g = LTR_LABELS[id] || 0;
+      return `<tr><td class="num">doc ${id}</td>${f.map(v => `<td>${v.toFixed(2)}</td>`).join('')}<td><span class="lbl-pill ${g === 0 ? 'g0' : ''}">${g}</span></td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+function renderLtrWeights() {
+  const s = ltrW.reduce((a, b) => a + Math.abs(b), 0) || 1; const lw = ltrW.map(x => x / s);
+  document.getElementById('ltrWeights').innerHTML = FEAT_NAMES.map((n, k) =>
+    `<div class="wbar-row"><span>${n}</span><div class="wbar"><span style="width:${Math.max(0, lw[k] * 100)}%"></span></div><span>${lw[k].toFixed(2)}</span></div>` +
+    `<div class="wbar-row"><span style="opacity:.55;font-size:10px">hand-tuned</span><div class="wbar hand"><span style="width:${HAND_W[k] * 100}%"></span></div><span style="color:var(--muted)">${HAND_W[k].toFixed(2)}</span></div>`
+  ).join('');
+}
+function renderLtrRanking() {
+  const ranked = [...LTR_CANDS].sort((a, b) => dot(ltrW, ltrFeatures(b)) - dot(ltrW, ltrFeatures(a)));
+  document.getElementById('ltrRanking').innerHTML = `<table><tbody>${ranked.map((id, i) =>
+    `<tr><td class="rank">${i + 1}</td><td class="num">doc ${id}</td><td><span class="lbl-pill ${(LTR_LABELS[id]||0)===0?'g0':''}">label ${LTR_LABELS[id] || 0}</span></td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('ltrStatus').textContent = `epoch ${ltrEpoch} · ${ltrCorrect()}/${PAIRS.length} pairs correctly ordered`;
+}
+const renderLtrAll = () => { renderLtrFeatures(); renderLtrWeights(); renderLtrRanking(); };
+document.getElementById('ltrTrain').onclick = () => {
+  if (ltrTimer) return;
+  ltrTimer = setInterval(() => {
+    const u = ltrStep(); renderLtrWeights(); renderLtrRanking();
+    if (u === 0 || ltrEpoch >= 300) { clearInterval(ltrTimer); ltrTimer = null; }
+  }, reduceMotion ? 0 : 100);
+};
+document.getElementById('ltrReset').onclick = () => {
+  if (ltrTimer) { clearInterval(ltrTimer); ltrTimer = null; }
+  ltrW = [...LTR_INIT]; ltrEpoch = 0; renderLtrAll();
+};
+renderLtrAll();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 12 — offline evaluation metrics
+   ───────────────────────────────────────────────────────────────────────── */
+const EVAL_GAINS = { 6: 3, 2: 3, 1: 2, 3: 1, 7: 0 }; // graded relevance for the candidate set
+const EVAL_A = [6, 2, 1, 3, 7];       // ideal-ish ordering
+let EVAL_B = [6, 3, 2, 1, 7];         // a gain-1 doc floated above higher-gain docs — reorder it
+const gain = id => EVAL_GAINS[id] ?? 0;
+const relTotal = Object.values(EVAL_GAINS).filter(g => g > 0).length;
+const precisionAtK = (r, k) => r.slice(0, k).filter(id => gain(id) > 0).length / k;
+const recallAtK = (r, k) => r.slice(0, k).filter(id => gain(id) > 0).length / relTotal;
+const reciprocalRank = r => { const i = r.findIndex(id => gain(id) > 0); return i < 0 ? 0 : 1 / (i + 1); };
+const averagePrecision = r => { let hits = 0, sum = 0; r.forEach((id, i) => { if (gain(id) > 0) { hits++; sum += hits / (i + 1); } }); return hits ? sum / relTotal : 0; };
+const dcgAtK = (r, k) => r.slice(0, k).reduce((s, id, i) => s + (Math.pow(2, gain(id)) - 1) / Math.log2(i + 2), 0);
+const idcgAtK = k => dcgAtK(Object.keys(EVAL_GAINS).map(Number).sort((a, b) => gain(b) - gain(a)), k);
+const ndcgAtK = (r, k) => { const idcg = idcgAtK(k); return idcg ? dcgAtK(r, k) / idcg : 0; };
+const evalKEl = document.getElementById('evalK');
+function evalTable(r, editable) {
+  return `<table><tbody>${r.map((id, i) => `<tr>
+    <td class="rank">${i + 1}</td>
+    <td>${editable ? `<span class="arrows"><button data-up="${i}" ${i===0?'disabled':''}>▲</button><button data-dn="${i}" ${i===r.length-1?'disabled':''}>▼</button></span>` : ''}<span class="num">doc ${id}</span></td>
+    <td><span class="lbl-pill ${gain(id) === 0 ? 'g0' : ''}">gain ${gain(id)}</span></td></tr>`).join('')}</tbody></table>`;
+}
+function evalMetrics(r, k) {
+  return `<div class="metric-grid">${[['P@'+k, precisionAtK(r,k)], ['R@'+k, recallAtK(r,k)], ['MRR', reciprocalRank(r)], ['MAP', averagePrecision(r)], ['NDCG@'+k, ndcgAtK(r,k)]]
+    .map(([l, v]) => `<div class="mcell ${l.startsWith('NDCG') ? 'win' : ''}"><div class="mv">${v.toFixed(3)}</div><div class="ml">${l}</div></div>`).join('')}</div>`;
+}
+function renderEval() {
+  const k = +evalKEl.value; document.getElementById('evalKout').textContent = k;
+  document.getElementById('evalA').innerHTML = evalTable(EVAL_A, false) + evalMetrics(EVAL_A, k);
+  document.getElementById('evalB').innerHTML = evalTable(EVAL_B, true) + evalMetrics(EVAL_B, k);
+  const pEq = precisionAtK(EVAL_A, k).toFixed(3) === precisionAtK(EVAL_B, k).toFixed(3);
+  const nA = ndcgAtK(EVAL_A, k), nB = ndcgAtK(EVAL_B, k);
+  document.getElementById('evalNote').innerHTML =
+    `<span class="eqbadge">Precision@${k} ${pEq ? 'is identical' : 'differs'}</span> · NDCG@${k}: A ${nA.toFixed(3)} vs B ${nB.toFixed(3)}. ` +
+    `${nA > nB ? 'A wins — it puts the highest-gain docs on top. ' : nA < nB ? 'B now wins — you moved a high-gain doc up. ' : 'They tie — same gains at each position. '}` +
+    `NDCG sees position &amp; grade where Precision only sees the set. Reorder B with the arrows and watch Precision@${k} stay put while NDCG moves.`;
+}
+document.getElementById('evalB').addEventListener('click', e => {
+  const up = e.target.dataset?.up, dn = e.target.dataset?.dn;
+  if (up !== undefined) { const i = +up; [EVAL_B[i-1], EVAL_B[i]] = [EVAL_B[i], EVAL_B[i-1]]; renderEval(); }
+  else if (dn !== undefined) { const i = +dn; [EVAL_B[i+1], EVAL_B[i]] = [EVAL_B[i], EVAL_B[i+1]]; renderEval(); }
+});
+evalKEl.addEventListener('input', renderEval); renderEval();
 </script>
 </body>
 </html>

@@ -11,6 +11,12 @@
     "phase4": "node src/phase4/retrieve-then-rank.ts",
     "phase5": "node src/phase5/scatter-gather.ts",
     "phase6": "node src/phase6/typeahead.ts",
+    "phase7": "node src/phase7/phrase-positional.ts",
+    "phase8": "node src/phase8/fuzzy-spelling.ts",
+    "phase9": "node src/phase9/vector-ann.ts",
+    "phase10": "node src/phase10/hybrid-rrf.ts",
+    "phase11": "node src/phase11/learning-to-rank.ts",
+    "phase12": "node src/phase12/evaluation-metrics.ts",
     "web": "node web/serve.mjs",
     "typecheck": "tsc --noEmit"
   },

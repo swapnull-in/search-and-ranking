@@ -17,14 +17,40 @@ runs the TypeScript directly. No external services.
 npm install   # dev types only
 ```
 
-## The lessons
+## The roadmap — beginner → staff
+
+Each phase is a runnable script **and** an interactive panel in the web demo.
+Work top to bottom; each tier assumes the one above.
+
+**Tier 1 · Foundations** — how a query finds *any* matching document
 
 | Command | What you learn |
 |---|---|
 | `npm run phase1` | **Inverted index** — analysis (tokenize/stopwords/stem) + boolean AND query |
 | `npm run phase2` | **TF-IDF** — ranking matches by term frequency × rarity |
+
+**Tier 2 · Ranking** — putting the *best* matches first
+
+| Command | What you learn |
+|---|---|
 | `npm run phase3` | **BM25** — TF saturation + length normalization (beats keyword-stuffing) |
 | `npm run phase4` | **Retrieve-then-rank** — the cheap-recall → expensive-precision funnel |
+
+**Tier 3 · Relevance & ranking** — how modern search actually decides what's good
+
+| Command | What you learn |
+|---|---|
+| `npm run phase7`  | **Phrase & positional queries** — a positional index answers "this *phrase*", not just "these words" |
+| `npm run phase8`  | **Fuzzy & spelling** — Levenshtein edit distance + "did you mean" at the vocabulary boundary |
+| `npm run phase9`  | **Vector / semantic + ANN** — cosine over embeddings matches *meaning*; HNSW/IVF for scale |
+| `npm run phase10` | **Hybrid + RRF** — fuse lexical (BM25) and semantic rankings with reciprocal rank fusion |
+| `npm run phase11` | **Learning to Rank** — a pairwise model *learns* the re-rank weights phase 4 hand-tuned |
+| `npm run phase12` | **Evaluation** — Precision/Recall, MRR, MAP, NDCG; why NDCG is the default |
+
+**Tier 4 · Systems & scale** — running it over billions of docs, fast
+
+| Command | What you learn |
+|---|---|
 | `npm run phase5` | **Scatter-gather** — sharding, aggregation, and tail latency |
 | `npm run phase6` | **Typeahead** — top-K per prefix precomputed at build time |
 
@@ -38,10 +64,16 @@ browser — every panel is one of the phases above, made interactive:
 - **Inverted index** — live boolean AND with posting lists and highlighted terms; flip **"break it"** to analyze the query differently from the index and watch matches collapse to zero — the #1 real-world search bug, live
 - **TF-IDF / BM25** — side-by-side, with `k1`/`b` sliders; watch the keyword-stuffed doc top TF-IDF but fall off BM25's first page. **Click any result** to expand the per-term `idf × tf` / `idf × norm` math
 - **Retrieve → rank** — drag the popularity/recency/exact-match weights and watch the order change
+- **Phrase & position** — slop slider; watch a doc with both words but not adjacent drop out of the phrase result
+- **Fuzzy & spelling** — type a typo, see edit-distance candidates and the corrected query flow into search
+- **Vector / semantic** — cosine ranking with a `lex` column showing what pure keyword search would have missed
+- **Hybrid + RRF** — BM25, semantic, and fused columns side by side, with the winner's `1/(k+rank)` math
+- **Learning to Rank** — click *Train* and watch a pairwise model move the weights off a BM25-heavy prior until the ranking matches the labels
+- **Evaluation** — reorder Ranking B with ↑↓ and watch Precision@k stay put while NDCG moves
 - **Scatter-gather** — animate a 5-shard query, then hedge the slow shard away; plus the p99 tail-latency math
 - **Typeahead** — real precomputed prefix table, suggestions narrow as you type
 
-Tabs are keyboard-navigable (arrow keys) and deep-linkable (`#3-bm25`) so you can share a link straight to one concept.
+The tab bar groups panels into the **Foundations → Ranking → Relevance → Systems** tiers above. Tabs are keyboard-navigable (arrow keys) and deep-linkable (`#3-bm25`, `#11-learning-to-rank`) so you can share a link straight to one concept.
 
 ```bash
 npm run web        # serves it at http://localhost:8080 (no deps)
@@ -82,6 +114,14 @@ src/
   phase4/  retrieve-then-rank funnel
   phase5/  sharding + scatter-gather + tail latency
   phase6/  typeahead (top-K per prefix)
+  phase7/  phrase & positional queries
+  phase8/  fuzzy matching + spelling correction
+  phase9/  vector / semantic search + ANN
+  phase10/ hybrid search + reciprocal rank fusion
+  phase11/ learning to rank (pairwise)
+  phase12/ offline evaluation metrics
+web/
+  index.html  ·  serve.mjs   (interactive demo of every phase — npm run web)
 ```
 
 ## License

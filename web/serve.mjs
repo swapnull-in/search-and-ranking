@@ -19,6 +19,7 @@ const server = createServer(async (req, res) => {
   try {
     const body = await readFile(file);
     res.setHeader("content-type", TYPES[file.slice(file.lastIndexOf("."))] ?? "application/octet-stream");
+    res.setHeader("cache-control", "no-store"); // always serve fresh during local dev
     res.end(body);
   } catch {
     res.statusCode = 404;
