@@ -24,6 +24,8 @@
     --bg: #faf9f6;
     --panel: #ffffff;
     --panel-2: #f4f2ec;
+    --sidebar-bg: #f4f2ec;
+    --hover: #ebe9e1;
     --ink: #191a20;
     --muted: #6c6d78;
     --line: #e7e3da;
@@ -43,7 +45,8 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0d0d13; --panel: #16161e; --panel-2: #1d1d27; --ink: #ecebf2; --muted: #9698a6;
+      --bg: #0d0d13; --panel: #16161e; --panel-2: #1d1d27; --sidebar-bg: #0a0a10; --hover: #20202c;
+      --ink: #ecebf2; --muted: #9698a6;
       --line: #282833; --accent: #907fff; --accent-soft: #211f36;
       --amber: #f0b45a; --amber-soft: #2a2216; --good: #40d98c; --warn: #f0b45a; --bad: #ff6b72;
       --code-bg: #08080d; --code-ink: #cfd0e0;
@@ -58,39 +61,58 @@
     font-feature-settings: "cv05" 1;
   }
   .mono, .num, code, .postings, .kbd, td.num, .rank, input[type=text], .slider-row label, .slider-row output { font-variant-numeric: tabular-nums; }
-  .wrap { max-width: 1060px; margin: 0 auto; padding: 30px 22px 90px; }
-  header.top { margin-bottom: 22px; }
-  header.top .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
-  header.top .glyph {
-    width: 30px; height: 30px; flex: none; border-radius: 8px; background: var(--ink);
-    display: grid; place-items: center; color: var(--bg); font-family: var(--mono); font-size: 15px; font-weight: 500;
+  /* ---- app shell: fixed sidebar rail + scrolling content column ---- */
+  .app { display: flex; align-items: flex-start; min-height: 100vh; }
+  .sidebar {
+    position: sticky; top: 0; height: 100vh; width: 268px; flex: none; z-index: 40;
+    display: flex; flex-direction: column; overflow-y: auto;
+    padding: 20px 14px 16px; background: var(--sidebar-bg); border-right: 1px solid var(--line);
   }
-  header.top .brand span { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-  header.top h1 {
-    font-family: var(--display); font-weight: 600; font-size: clamp(30px, 5vw, 44px);
-    margin: 0 0 12px; letter-spacing: -0.025em; line-height: 1.02; max-width: 20ch;
+  .brand { display: flex; align-items: center; gap: 11px; padding: 4px 10px 16px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .glyph {
+    width: 32px; height: 32px; flex: none; border-radius: 9px; background: var(--accent);
+    display: grid; place-items: center; color: #fff; font-family: var(--mono); font-size: 16px; font-weight: 500;
+    box-shadow: 0 5px 14px -5px color-mix(in srgb, var(--accent) 60%, transparent);
   }
-  header.top h1 em { font-style: normal; color: var(--accent); }
-  header.top p { color: var(--muted); margin: 0; max-width: 66ch; font-size: 16px; }
-  header.top p strong { color: var(--ink); font-weight: 600; }
-  .mental {
-    margin: 22px 0 8px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 14px; padding: 16px 18px; font-family: var(--mono);
-    font-size: 12px; color: var(--muted); overflow-x: auto; white-space: pre; box-shadow: var(--shadow);
+  .brand .wm { display: flex; flex-direction: column; line-height: 1.25; }
+  .brand .wm b { font-family: var(--display); font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em; color: var(--ink); }
+  .brand .wm span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  nav.nav { display: flex; flex-direction: column; }
+  .nav-group { margin-top: 13px; }
+  .nav-group-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); padding: 0 11px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; cursor: pointer;
+    background: none; border: none; font-family: var(--sans); font-size: 13.5px; color: var(--muted);
+    padding: 7px 11px; border-radius: 8px; transition: .12s; line-height: 1.3;
   }
-  nav.tabs {
-    position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-    background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: saturate(1.4) blur(10px);
-    padding: 11px 0; margin-bottom: 4px; border-bottom: 1px solid var(--line);
-  }
-  nav.tabs button {
-    font-family: var(--sans); font-size: 13px; font-weight: 500; border: 1px solid var(--line);
-    background: var(--panel); color: var(--muted); padding: 6px 13px; border-radius: 999px;
-    cursor: pointer; transition: .14s ease; white-space: nowrap;
-  }
-  nav.tabs button:hover { color: var(--ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-  nav.tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 60%, transparent); }
-  section.phase { display: none; padding-top: 22px; }
+  .nav-item .n { font-family: var(--mono); font-size: 11px; color: color-mix(in srgb, var(--muted) 75%, transparent); min-width: 15px; text-align: right; }
+  .nav-item:hover { background: var(--hover); color: var(--ink); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .nav-item.active .n { color: var(--accent); }
+  .side-foot { margin-top: auto; padding: 15px 11px 2px; font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--muted); }
+  .side-foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .side-foot a:hover { color: var(--accent); border-color: var(--accent); }
+  .main { flex: 1; min-width: 0; padding: 42px clamp(24px, 4vw, 60px) 100px; }
+  .main-inner { max-width: 940px; margin: 0 auto; }
+  .topbar, .backdrop { display: none; }
+  /* ---- overview / hero ---- */
+  .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  .hero h1 { font-family: var(--display); font-weight: 600; font-size: clamp(31px, 4.6vw, 47px); margin: 0 0 16px; letter-spacing: -0.026em; line-height: 1.03; max-width: 17ch; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--muted); margin: 0; max-width: 60ch; font-size: 16.5px; line-height: 1.6; }
+  .hero p strong { color: var(--ink); font-weight: 600; }
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; margin: 32px 0 4px; }
+  .flow-col { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 17px 19px; box-shadow: var(--shadow); }
+  .flow-head { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 600; font-size: 14.5px; margin-bottom: 13px; }
+  .flow-head em { font-style: normal; font-family: var(--mono); font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .flow-head .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .flow-head .dot.idx { background: var(--amber); }
+  .flow-head .dot.qry { background: var(--accent); }
+  .flow-col ol { margin: 0; padding-left: 17px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--ink); }
+  .flow-arrow { display: grid; place-items: center; color: var(--muted); font-size: 20px; }
+  .overview-hint { font-size: 14.5px; color: var(--muted); margin: 24px 0 0; line-height: 1.6; max-width: 62ch; }
+  .overview-hint b { color: var(--ink); font-weight: 600; }
+  section.phase { display: none; }
   section.phase.active { display: block; animation: fade .22s ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
   .phase h2 { font-family: var(--display); font-weight: 600; font-size: 25px; margin: 0 0 6px; letter-spacing: -0.02em; }
@@ -171,8 +193,33 @@
   code { font-family: var(--mono); background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 5px; font-size: .88em; }
   .footer { margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; text-align: center; }
   @media (max-width: 560px) { .metric { font-size: 21px; } }
-  nav.tabs button:focus-visible, input:focus-visible, .srow:focus-visible {
+  .nav-item:focus-visible, input:focus-visible, .srow:focus-visible, button:focus-visible, a:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  /* ---- mobile: sidebar becomes a drawer behind a top bar ---- */
+  @media (max-width: 880px) {
+    .app { display: block; }
+    .topbar {
+      display: flex; align-items: center; gap: 11px; position: sticky; top: 0; z-index: 30;
+      padding: 11px 16px; background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: saturate(1.5) blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .topbar b { font-family: var(--display); font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; }
+    .hamburger {
+      margin-left: auto; display: grid; place-items: center; width: 38px; height: 38px;
+      border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); cursor: pointer;
+      font-family: var(--mono); font-size: 17px; line-height: 1;
+    }
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100dvh; width: 286px; transform: translateX(-100%);
+      transition: transform .22s ease; box-shadow: 0 0 70px rgba(0,0,0,.28);
+    }
+    .app.nav-open .sidebar { transform: none; }
+    .backdrop { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0,0,0,.42); opacity: 0; pointer-events: none; transition: opacity .22s; }
+    .app.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+    .main { padding: 22px 18px 84px; }
+    .flow { grid-template-columns: 1fr; }
+    .flow-arrow { transform: rotate(90deg); }
   }
   tr.srow.clk { cursor: pointer; }
   tr.srow.clk:hover td { background: var(--accent-soft); }
@@ -220,23 +267,55 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand"><span class="glyph">≡</span><span>Search Systems · Interactive Lab</span></div>
-    <h1>Take a search engine <em>apart</em>, one decision at a time.</h1>
-    <p>Every panel runs the real algorithm right here in your browser — inverted index, BM25, vectors,
-       hybrid ranking, evaluation. The through-line: search <strong>inverts the work</strong>, paying the
-       expensive cost at index time so queries stay cheap.</p>
-  </header>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="glyph">≡</span>
+      <span class="wm"><b>Search Systems</b><span>Interactive lab</span></span>
+    </div>
+    <nav class="nav" id="nav" aria-label="Lessons"></nav>
+    <div class="side-foot">Runnable ports of the CLI phases.<br /><a href="https://github.com/swapnull-in/search-and-ranking" target="_blank" rel="noopener">View source ↗</a></div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
 
-  <div class="mental">        INDEX TIME (expensive, offline)          QUERY TIME (cheap, online)
-  ┌─────────────────────────────────────┐   ┌──────────────────────────────────┐
-  │ analyze → inverted index             │   │ analyze query → retrieve (BM25)  │
-  │ precompute typeahead prefixes        │   │  → re-rank shortlist → results   │
-  │ build &amp; shard segments               │   │ scatter to shards → gather top-k │
-  └─────────────────────────────────────┘   └──────────────────────────────────┘</div>
+  <main class="main">
+    <div class="topbar">
+      <span class="glyph">≡</span><b>Search Systems</b>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">≡</button>
+    </div>
+    <div class="main-inner">
 
-  <nav class="tabs" id="tabs"></nav>
+  <!-- OVERVIEW -->
+  <section class="phase" data-tab="Overview">
+    <div class="hero">
+      <p class="hero-eyebrow">Search systems · interactive lab</p>
+      <h1>Take a search engine <em>apart</em>, one decision at a time.</h1>
+      <p>Every panel runs the real algorithm right here in your browser — inverted index, BM25, vectors,
+         hybrid ranking, evaluation. The through-line: search <strong>inverts the work</strong>, paying the
+         expensive cost at index time so queries stay cheap.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-col">
+        <div class="flow-head"><span class="dot idx"></span>Index time <em>· offline · expensive</em></div>
+        <ol>
+          <li>analyze → build the <code>inverted index</code></li>
+          <li>precompute typeahead prefixes</li>
+          <li>build &amp; shard segments</li>
+        </ol>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-col">
+        <div class="flow-head"><span class="dot qry"></span>Query time <em>· online · cheap</em></div>
+        <ol>
+          <li>analyze query → retrieve with <code>BM25</code></li>
+          <li>re-rank the shortlist</li>
+          <li>scatter to shards → gather top-k</li>
+        </ol>
+      </div>
+    </div>
+    <p class="overview-hint"><b>Start anywhere in the sidebar.</b> Lessons run beginner → staff, top to bottom:
+      foundations, then ranking, modern relevance, and finally systems &amp; scale.</p>
+  </section>
 
   <!-- ANALYZER -->
   <section class="phase" data-tab="Analyzer">
@@ -518,8 +597,10 @@
     </div>
   </section>
 
-  <div class="footer">Faithful browser port of the <code>src/phase*</code> scripts · same analyzer, BM25, re-ranker &amp; prefix table · MIT</div>
-</div>
+    <div class="footer">Faithful browser port of the <code>src/phase*</code> scripts · same analyzer, BM25, re-ranker &amp; prefix table · MIT</div>
+    </div><!-- /main-inner -->
+  </main>
+</div><!-- /app -->
 
 <script>
 /* ─────────────────────────────────────────────────────────────────────────
@@ -553,12 +634,15 @@ const docById = id => CORPUS.find(d => d.id === id) || DOCS.find(d => d.id === i
    Tabs
    ───────────────────────────────────────────────────────────────────────── */
 const sections = [...document.querySelectorAll('section.phase')];
-const tabsEl = document.getElementById('tabs');
+const navEl = document.getElementById('nav');
+const appEl = document.getElementById('app');
 const tabButtons = [];
 const slug = s => s.dataset.tab.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-/** Beginner → staff tiers, keyed by tab slug (DOM order is grouped to match). */
+const closeNav = () => appEl.classList.remove('nav-open');
+/** Beginner → staff tiers, keyed by slug (DOM order is grouped to match). */
 const TIER_OF = {
+  'overview': 'Overview',
   'analyzer': 'Foundations', '1-inverted-index': 'Foundations', '2-tf-idf': 'Foundations',
   '3-bm25': 'Ranking', '4-retrieve-rank': 'Ranking',
   '7-phrase-position': 'Relevance & ranking', '8-fuzzy-spelling': 'Relevance & ranking',
@@ -566,28 +650,30 @@ const TIER_OF = {
   '11-learning-to-rank': 'Relevance & ranking', '12-evaluation': 'Relevance & ranking',
   '5-scatter-gather': 'Systems & scale', '6-typeahead': 'Systems & scale',
 };
-tabsEl.setAttribute('role', 'tablist');
-let lastTier = null;
+navEl.setAttribute('role', 'tablist');
+navEl.setAttribute('aria-orientation', 'vertical');
+let curTier = null, groupEl = null;
 sections.forEach((sec, i) => {
-  const id = slug(sec);
-  const tier = TIER_OF[id] || '';
-  if (tier !== lastTier) {
-    const d = document.createElement('span');
-    d.className = 'tab-tier'; d.textContent = tier; d.setAttribute('aria-hidden', 'true');
-    tabsEl.appendChild(d); lastTier = tier;
+  const id = slug(sec), tier = TIER_OF[id] || 'More';
+  if (tier !== curTier) {
+    groupEl = document.createElement('div'); groupEl.className = 'nav-group';
+    const h = document.createElement('div'); h.className = 'nav-group-label'; h.textContent = tier;
+    groupEl.appendChild(h); navEl.appendChild(groupEl); curTier = tier;
   }
   sec.id = 'panel-' + id; sec.setAttribute('role', 'tabpanel'); sec.setAttribute('aria-labelledby', 'tab-' + id);
+  const parts = sec.dataset.tab.split('·').map(s => s.trim());
   const b = document.createElement('button');
-  b.textContent = sec.dataset.tab; b.id = 'tab-' + id;
+  b.className = 'nav-item'; b.id = 'tab-' + id;
   b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', sec.id);
-  b.onclick = () => activate(i, true);
+  b.innerHTML = `<span class="n">${parts.length > 1 ? parts[0] : ''}</span><span class="t">${parts.length > 1 ? parts[1] : parts[0]}</span>`;
+  b.onclick = () => { activate(i, true); closeNav(); };
   b.onkeydown = (e) => {
-    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : e.key === 'Home' ? 'first' : e.key === 'End' ? 'last' : 0;
+    const d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : e.key === 'Home' ? 'first' : e.key === 'End' ? 'last' : 0;
     if (!d) return; e.preventDefault();
     const n = d === 'first' ? 0 : d === 'last' ? sections.length - 1 : (i + d + sections.length) % sections.length;
     activate(n, true); tabButtons[n].focus();
   };
-  tabButtons.push(b); tabsEl.appendChild(b);
+  tabButtons.push(b); groupEl.appendChild(b);
 });
 function activate(i, push) {
   sections.forEach((s, j) => s.classList.toggle('active', i === j));
@@ -607,6 +693,14 @@ function fromHash() {
 }
 addEventListener('hashchange', fromHash);
 fromHash();
+/* Mobile drawer */
+const hamburger = document.getElementById('hamburger');
+hamburger?.addEventListener('click', () => {
+  const open = appEl.classList.toggle('nav-open');
+  hamburger.setAttribute('aria-expanded', String(open));
+});
+document.getElementById('backdrop')?.addEventListener('click', closeNav);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeNav(); });
 
 /* Expandable score-breakdown rows (delegated; tables re-render on every input). */
 function toggleRow(row) {
