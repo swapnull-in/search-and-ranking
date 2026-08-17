@@ -21,6 +21,7 @@
     "phase14": "node src/phase14/facets-filters.ts",
     "phase15": "node src/phase15/boolean-wand.ts",
     "phase16": "node src/phase16/reindex-aliases.ts",
+    "phase17": "node src/phase17/typeahead-at-scale.ts",
     "web": "node web/serve.mjs",
     "deploy": "npx wrangler pages deploy web --project-name search-and-ranking",
     "typecheck": "tsc --noEmit"

@@ -61,6 +61,7 @@ Work top to bottom; each tier assumes the one above.
 | `npm run phase14` | **Facets & filters** — the forward index / doc-values; cached score-free filters, facet aggregations |
 | `npm run phase15` | **Boolean + WAND** — AND/OR/NOT, and Block-Max WAND skipping docs that can't reach the top-K |
 | `npm run phase16` | **Reindex & aliases** — zero-downtime blue-green reindex + shard routing |
+| `npm run phase17` | **Typeahead at scale** — precomputed top-K per prefix, the prefix table, batch rebuild + freshness overlay *(Deep Dive 29)* |
 
 See [`COVERAGE.md`](COVERAGE.md) for how the phases map to a full Staff-level search
 syllabus, and what's still on the roadmap (indexing pipeline / CDC, hot-warm-cold,
@@ -178,6 +179,14 @@ src/
 web/
   index.html  ·  serve.mjs   (interactive demo of every phase — npm run web)
 ```
+
+## Drill & study guide
+
+The web lab has a **Drill** tab — the matching study module's interview questions
+and cheat-sheet one-liners as click-to-reveal cards (active recall: answer out
+loud before revealing). [`STUDY-GUIDE.md`](STUDY-GUIDE.md) maps every phase to
+the exact module section it implements, with the staff-level insight quoted, and
+points to the deep dives to read next.
 
 ## License
 

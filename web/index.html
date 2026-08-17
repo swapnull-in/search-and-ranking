@@ -284,7 +284,7 @@
       <span class="wm"><b>Search Systems</b><span>Interactive lab</span></span>
     </div>
     <nav class="nav" id="nav" aria-label="Lessons"></nav>
-    <div class="side-foot">Runnable ports of the CLI phases.<br /><a href="https://github.com/swapnull-in/search-and-ranking" target="_blank" rel="noopener">View source ↗</a></div>
+    <div class="side-foot">Runnable ports of the CLI phases.<br /><a href="https://github.com/swapnull-in/search-and-ranking" target="_blank" rel="noopener">View source ↗</a> · <a href="https://system-design-labs.pages.dev" target="_blank" rel="noopener">all 10 labs ↗</a></div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
 
@@ -735,10 +735,33 @@
   </section>
 
     <div class="footer">Faithful browser port of the <code>src/phase*</code> scripts · same analyzer, BM25, re-ranker &amp; prefix table · MIT</div>
+    <!-- 17 · TYPEAHEAD AT SCALE -->
+    <section class="phase" data-tab="17 · Typeahead at scale">
+      <h2>Typeahead at scale — precompute the answer</h2>
+      <p class="lede">Phase 6 walks the trie per keystroke; at scale you <strong>precompute top-K per prefix</strong> so
+        each keystroke is a single point lookup (the prefix table — the boring-correct KV answer), with batch rebuilds +
+        a small freshness overlay off the hot path. <em>(Deep Dive 29 · <code>npm run phase17</code>)</em></p>
+      <div class="card"><div class="lab">
+        <div class="controls">
+          <div class="seg"><button class="ghost sel" id="ta-p1">"s"</button><button class="ghost" id="ta-p2">"sh"</button><button class="ghost" id="ta-p3">"sho"</button></div>
+          <div class="seg"><button class="ghost sel" id="ta-walk">walk subtree per keystroke</button><button class="ghost" id="ta-pre">precomputed top-K</button></div>
+          <div class="verdict" id="ta-verdict"><span class="dot"></span><span id="ta-vtext">Pick a prefix and compare the two lookup strategies.</span></div>
+        </div>
+        <div class="stage">
+          <div class="log-list" id="ta-out" style="font-family:var(--mono);font-size:12.5px;line-height:1.8">—</div>
+          <p class="proof"><b>The proof:</b> the walk visits every node under the prefix and sorts, on every keystroke of
+            every user — cost scales with the subtree. The precomputed list answers from <b>one</b> read because the
+            top-K was decided at build time; updates land in a batch rebuild + a capped overlay, never on the keystroke
+            path. Precompute turns per-keystroke cost into per-day cost.</p>
+        </div>
+      </div></div>
+    </section>
     </div><!-- /main-inner -->
   </main>
 </div><!-- /app -->
 
+<script src="drill-data.js"></script>
+<script src="drill.js"></script>
 <script>
 /* ─────────────────────────────────────────────────────────────────────────
    Faithful port of src/lib/corpus.ts — analyzer + corpus
@@ -786,6 +809,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const closeNav = () => appEl.classList.remove('nav-open');
 /** Beginner → staff tiers, keyed by slug (DOM order is grouped to match). */
 const TIER_OF = {
+  'drill':'Practice',
+  '17-typeahead-at-scale':'Deep dives',
   'overview': 'Overview', 'corpus': 'Overview',
   'analyzer': 'Foundations', '1-inverted-index': 'Foundations', '2-tf-idf': 'Foundations',
   '3-bm25': 'Ranking', '4-retrieve-rank': 'Ranking',
@@ -1633,6 +1658,28 @@ const QUERY_TARGETS = ['q1', 'q2', 'q3', 'q4', 'q7', 'q9', 'q10', 'q14', 'q15'];
     try { localStorage.removeItem('sr-corpus'); localStorage.removeItem('sr-query'); } catch {}
     location.reload();
   };
+})();
+/* ══ 17 · TYPEAHEAD AT SCALE ══ */
+(function(){
+  var CORPUS={ 's':[['shoes',9800],['shirt',7200],['shorts',5100],['socks',4900],['sunglasses',3300]],
+               'sh':[['shoes',9800],['shirt',7200],['shorts',5100],['shampoo',2100],['shawl',900]],
+               'sho':[['shoes',9800],['shorts',5100],['shopping bag',1400],['shovel',300],['shot glass',210]] };
+  var SUBTREE={'s':2140,'sh':860,'sho':115};
+  var prefix='s', mode='walk';
+  function sel(group, id){ group.forEach(function(x){ document.getElementById(x[0]).classList.toggle('sel', x[0]===id); }); }
+  var pgroup=[['ta-p1','s'],['ta-p2','sh'],['ta-p3','sho']];
+  pgroup.forEach(function(x){ document.getElementById(x[0]).onclick=function(){ prefix=x[1]; sel(pgroup,x[0]); render(); }; });
+  var mgroup=[['ta-walk','walk'],['ta-pre','pre']];
+  mgroup.forEach(function(x){ document.getElementById(x[0]).onclick=function(){ mode=x[1]; sel(mgroup,x[0]); render(); }; });
+  function render(){
+    var list=CORPUS[prefix], nodes=SUBTREE[prefix];
+    var html='<b>suggestions for "'+prefix+'"</b><br>'+list.map(function(s,i){return (i+1)+'. '+s[0]+' <span style="color:var(--muted)">('+s[1].toLocaleString()+' searches)</span>';}).join('<br>');
+    document.getElementById('ta-out').innerHTML=html;
+    var v=document.getElementById('ta-verdict'), vt=document.getElementById('ta-vtext');
+    if(mode==='walk'){ v.className='verdict warn'; vt.innerHTML='Walked <b>'+nodes.toLocaleString()+' trie nodes</b> + a sort — per keystroke, per user. Fine in a demo; a fleet-melter at 50 ms budgets.'; }
+    else { v.className='verdict ok'; vt.innerHTML='Prefix table: <b>1 point lookup</b> ("'+prefix+'" → its precomputed top-5). '+nodes.toLocaleString()+'-node walk avoided; the list was decided at build time.'; }
+  }
+  render();
 })();
 </script>
 </body>
