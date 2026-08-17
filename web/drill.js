@@ -75,6 +75,7 @@
 
   var order = D.cards.map(function (_, i) { return i; });
   var reviewOnly = false;
+  var lastCard = null;          // most recently revealed card (for g / a keys)
   var seed = 7;
   function rnd() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
 
@@ -115,6 +116,7 @@
         a.style.display = on ? 'block' : 'none';
         b.textContent = on ? 'Hide answer' : 'Reveal answer';
         ok.style.display = ag.style.display = on ? 'inline-block' : 'none';
+        if (on) lastCard = d;
       };
       ok.onclick = function () { mastery[cardKey(card)] = 'ok'; save(); paintCount(); d.className = 'drill-card mastered'; };
       ag.onclick = function () { mastery[cardKey(card)] = 'again'; save(); paintCount(); d.className = 'drill-card again'; };
@@ -143,4 +145,33 @@
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
   };
   paint(); paintCount();
+
+  // ── keyboard: r reveal-next · g got it · a again (only while Drill is active)
+  addEventListener('keydown', function (e) {
+    if (!sec.classList.contains('active')) return;
+    var t = e.target, tag = (t.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'r') {
+      var btn = null;
+      root.querySelectorAll('.drill-btn').forEach(function (b) { if (!btn && b.textContent === 'Reveal answer') btn = b; });
+      if (btn) {
+        btn.click();
+        lastCard = btn.closest('.drill-card');
+        lastCard.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+    } else if (e.key === 'g' || e.key === 'a') {
+      var d = lastCard && lastCard.isConnected ? lastCard : null;
+      if (!d) {
+        root.querySelectorAll('.drill-card').forEach(function (c) {
+          var ans = c.querySelector('.drill-a');
+          if (!d && ans && ans.style.display === 'block') d = c;
+        });
+      }
+      if (d) {
+        var m = d.querySelector(e.key === 'g' ? '.drill-mini.good' : '.drill-mini.amber');
+        if (m) m.click();
+      }
+    }
+  });
 })();

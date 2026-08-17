@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><title>progress</title></head><body>
+<script>
+/**
+ * Progress reporter — embedded as a hidden iframe by the system-design-labs hub.
+ * Reads this origin's lab progress from localStorage (written by lab.js /
+ * drill.js) and posts it to the parent. Nothing here is sensitive: it is only
+ * "n of m lessons viewed / drill cards mastered" for this lab family.
+ */
+(function () {
+  var labs = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf('sdlabs-meta:') !== 0) continue;
+      try {
+        var meta = JSON.parse(localStorage.getItem(k));
+        var done = JSON.parse(localStorage.getItem(meta.progressKey) || '{}');
+        var m = JSON.parse(localStorage.getItem(meta.drillKey) || '{}');
+        var mastered = 0; for (var q in m) if (m[q] === 'ok') mastered++;
+        labs.push({
+          lab: meta.lab,
+          lessonsDone: Math.min(Object.keys(done).length, meta.lessons),
+          lessonsTotal: meta.lessons,
+          drillMastered: Math.min(mastered, meta.drills),
+          drillTotal: meta.drills,
+        });
+      } catch (e) {}
+    }
+  } catch (e) {}
+  if (parent !== window) parent.postMessage({ type: 'sdlabs:progress', labs: labs }, '*');
+})();
+</script>
+</body></html>
