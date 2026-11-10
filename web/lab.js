@@ -98,6 +98,13 @@
   meter.className = 'progress-wrap';
   meter.innerHTML = '<div class="progress-label"><span>Progress</span><span id="prog-n">0/0</span></div><div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>';
   var foot = document.querySelector('.sidebar .side-foot');
+  // "all 10 labs": inside the family site (/<repo>/) the hub is one level up;
+  // run on its own, the lab has no hub next to it, so the link goes to the hub repo.
+  var hubLink = foot && foot.querySelector('a[data-hub]');
+  if (hubLink && /^\/[^/]+\/(index\.html)?$/.test(location.pathname)) {
+    hubLink.setAttribute('href', '../');
+    hubLink.removeAttribute('target');
+  }
   if (foot) foot.parentNode.insertBefore(meter, foot);
 
   function paintProgress() {

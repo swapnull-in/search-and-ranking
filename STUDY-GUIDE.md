@@ -1,6 +1,6 @@
 # Study Guide — this repo ↔ Module 07 (Search & Ranking)
 
-This repo is the *runnable half* of `Core Course/07-search.md`: every phase implements one mechanism the module explains. The loop for each phase: **run it** (`npm run phaseN`) → **read the code** (each file opens with a mini-lecture header) → **poke the matching panel** in the web lab (`npm run web`) and quiz yourself in the **Drill** tab → **read the module section** for the staff-level framing (decisive defaults, revisit-triggers, anti-patterns). The code proves the mechanism works; the module tells you what to *say about it* in the room.
+This repo is the *runnable half* of [`Core Course/07-search.md`](https://github.com/swapnull-in/system-design/blob/main/Core%20Course/07-search.md): every phase implements one mechanism the module explains. The loop for each phase: **run it** (`npm run phaseN`) → **read the code** (each file opens with a mini-lecture header) → **poke the matching panel** in the web lab (`npm run web`) and quiz yourself in the **Drill** tab → **read the module section** for the staff-level framing (decisive defaults, revisit-triggers, anti-patterns). The code proves the mechanism works; the module tells you what to *say about it* in the room.
 
 ## Phase → module mapping
 
@@ -25,9 +25,9 @@ This repo is the *runnable half* of `Core Course/07-search.md`: every phase impl
 
 ## Go deeper
 
-- **Deep Dives/06-elasticsearch.md** — the production side of phases 13/16: cluster anatomy, refresh/flush/merge, ILM, and the ops scars this repo only simulates.
-- **Deep Dives/11-vector-databases.md** — phases 9/10 at real scale: HNSW vs IVF-PQ internals, the recall/latency/memory triangle, and when a vector DB beats ES.
-- **Deep Dives/29-typeahead-autocomplete.md** — the full system-design treatment of phase 6: prefix sharding, edge caching, and personalized suggestion ranking.
-- **Core Course/16-data-processing.md** — the biggest gap this repo doesn't build: the CDC/outbox indexing pipeline (§5.1) that makes "delete the cluster and rebuild" true.
-- **Core Course/06-databases.md** — why search is a derived read model and never the source of truth; the litmus test behind the module's #1 anti-pattern.
+- **[Deep Dives/06-elasticsearch.md](https://github.com/swapnull-in/system-design/blob/main/Deep%20Dives/06-elasticsearch.md)** — the production side of phases 13/16: cluster anatomy, refresh/flush/merge, ILM, and the ops scars this repo only simulates.
+- **[Deep Dives/11-vector-databases.md](https://github.com/swapnull-in/system-design/blob/main/Deep%20Dives/11-vector-databases.md)** — phases 9/10 at real scale: HNSW vs IVF-PQ internals, the recall/latency/memory triangle, and when a vector DB beats ES.
+- **[Deep Dives/29-typeahead-autocomplete.md](https://github.com/swapnull-in/system-design/blob/main/Deep%20Dives/29-typeahead-autocomplete.md)** — the full system-design treatment of phase 6: prefix sharding, edge caching, and personalized suggestion ranking.
+- **[Core Course/16-data-processing.md](https://github.com/swapnull-in/system-design/blob/main/Core%20Course/16-data-processing.md)** — the biggest gap this repo doesn't build: the CDC/outbox indexing pipeline (§5.1) that makes "delete the cluster and rebuild" true.
+- **[Core Course/06-databases.md](https://github.com/swapnull-in/system-design/blob/main/Core%20Course/06-databases.md)** — why search is a derived read model and never the source of truth; the litmus test behind the module's #1 anti-pattern.
 - **DDIA, Chapter 3 (Storage and Retrieval)** — LSM-trees and SSTables are the same immutable-segment + merge pattern as phase 13, seen from the database side.
