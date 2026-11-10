@@ -1,0 +1,25 @@
+# Type-checks the repo and runs every numbered phase, so a broken lesson fails the build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Type check
+        run: npm run typecheck
+      - name: Run phases
+        env:
+          SKIP_PHASES: ""
+        run: node scripts/run-phases.mjs
